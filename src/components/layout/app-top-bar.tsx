@@ -1,5 +1,6 @@
 "use client";
 
+import { HeaderCurrencySelect } from "@/components/layout/header-currency-select";
 import { useAuth } from "@/contexts/auth-context";
 import { useCurrentUser } from "@/hooks/auth/use-current-user";
 
@@ -78,6 +79,7 @@ export function AppTopBar({ onMenuClick }: { onMenuClick: () => void }) {
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        {token ? <HeaderCurrencySelect /> : null}
         {isBootstrapping ? (
           <span className="hidden items-center gap-1.5 rounded-full bg-amber-500/12 px-2.5 py-1 text-[11px] font-medium text-amber-800 ring-1 ring-amber-500/20 dark:text-amber-200 dark:ring-amber-500/30 sm:inline-flex">
             <span className="relative flex h-1.5 w-1.5">

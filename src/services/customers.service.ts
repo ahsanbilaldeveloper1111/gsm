@@ -1,15 +1,24 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiDelete, apiGet, apiPost, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
+import type {
+  CreateCustomerData,
+  Customer,
+  IndexCustomerParams,
+  UpdateCustomerData,
+} from "@/models/customer";
 
 const r = apiRoutes.customers;
 
 export const customerService = {
-  list: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.index(), params),
+  list: (params?: IndexCustomerParams) =>
+    apiGet<ApiSuccessResponse<Customer[]>>(
+      r.index(),
+      params as QueryParams | undefined,
+    ),
 
-  create: (body: unknown) =>
-    apiPost<ApiSuccessResponse<unknown>>(r.store(), body),
+  create: (body: CreateCustomerData) =>
+    apiPost<ApiSuccessResponse<Customer>>(r.store(), body),
 
   productPricingList: (customer: number | string, params?: QueryParams) =>
     apiGet<ApiSuccessResponse<unknown>>(
@@ -47,10 +56,10 @@ export const customerService = {
     ),
 
   show: (id: number | string, params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.show(id), params),
+    apiGet<ApiSuccessResponse<Customer>>(r.show(id), params),
 
-  update: (customer: number | string, body: unknown) =>
-    apiPost<ApiSuccessResponse<unknown>>(r.update(customer), body),
+  update: (customer: number | string, body: UpdateCustomerData) =>
+    apiPost<ApiSuccessResponse<Customer>>(r.update(customer), body),
 
   destroy: (customer: number | string) =>
     apiDelete<ApiSuccessResponse<unknown>>(r.destroy(customer)),

@@ -1,4 +1,4 @@
-import { ExpensesView } from "@/components/pages/list-views";
+import { ExpensesModuleView } from "@/components/views/expenses-module-view";
 import { PageFrame } from "@/components/layout/page-frame";
 import { PageHeader } from "@/components/ui/page-header";
 
@@ -9,10 +9,10 @@ export default function ExpensesPage() {
     <PageFrame>
       <PageHeader
         title="Expenses"
-        description="Operating expenses, receipts, and attachments."
+        description="Create, edit, and delete expenses. Categories load from the expense-categories API."
       />
       <div className="mt-8">
-        <ExpensesView />
+        <ExpensesModuleView />
       </div>
     </PageFrame>
   );

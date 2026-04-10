@@ -1,36 +1,52 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
-import { apiDelete, apiGet, apiPost, apiPut, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import {
+  apiDelete,
+  apiGet,
+  apiPost,
+  apiPut,
+  type QueryParams,
+} from "@/lib/api/http";
+import { apiRoutes } from "@/lib/routes/api-routes";
+import type {
+  CreateInventoryData,
+  IndexInventoryParams,
+  Inventory,
+  InventoryStats,
+  InventorySummary,
+} from "@/models/inventory";
 
 const r = apiRoutes.inventory;
 
 export const inventoryService = {
-  list: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.index(), params),
+  list: (params?: IndexInventoryParams) =>
+    apiGet<ApiSuccessResponse<Inventory[]>>(
+      r.index(),
+      params as QueryParams | undefined,
+    ),
 
-  create: (body: unknown) =>
-    apiPost<ApiSuccessResponse<unknown>>(r.create(), body),
+  create: (body: CreateInventoryData) =>
+    apiPost<ApiSuccessResponse<Inventory>>(r.create(), body),
 
   select: (params?: QueryParams) =>
     apiGet<ApiSuccessResponse<unknown>>(r.select(), params),
 
   summary: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.summary(), params),
+    apiGet<ApiSuccessResponse<InventorySummary>>(r.summary(), params),
 
   stats: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.stats(), params),
+    apiGet<ApiSuccessResponse<InventoryStats>>(r.stats(), params),
 
   search: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.search(), params),
+    apiGet<ApiSuccessResponse<Inventory[]>>(r.search(), params),
 
   categories: (params?: QueryParams) =>
     apiGet<ApiSuccessResponse<unknown>>(r.categories(), params),
 
   byCategory: (category: string, params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.category(category), params),
+    apiGet<ApiSuccessResponse<Inventory[]>>(r.category(category), params),
 
   show: (id: number | string, params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.show(id), params),
+    apiGet<ApiSuccessResponse<Inventory>>(r.show(id), params),
 
   locations: {
     list: (params?: QueryParams) =>

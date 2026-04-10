@@ -1,15 +1,16 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiDelete, apiGet, apiPost, apiPut, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
+import type { Product } from "@/models/product";
 
 const r = apiRoutes.products;
 
 export const productService = {
   list: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.index(), params),
+    apiGet<ApiSuccessResponse<Product[]>>(r.index(), params),
 
   active: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.active(), params),
+    apiGet<ApiSuccessResponse<Product[]>>(r.active(), params),
 
   withCompanyPricing: (params?: QueryParams) =>
     apiGet<ApiSuccessResponse<unknown>>(r.withCompanyPricing(), params),

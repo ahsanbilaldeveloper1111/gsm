@@ -1,6 +1,7 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiGet, apiPost, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
+import type { DashboardOverview } from "@/models/analytics";
 
 const r = apiRoutes.reports;
 
@@ -42,7 +43,7 @@ export const reportService = {
     apiGet<ApiSuccessResponse<unknown>>(r.paymentHistoryEnhanced(), params),
 
   dashboard: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.dashboard(), params),
+    apiGet<ApiSuccessResponse<DashboardOverview>>(r.dashboard(), params),
 
   exportReport: (body: unknown) =>
     apiPost<ApiSuccessResponse<unknown>>(r.export(), body),

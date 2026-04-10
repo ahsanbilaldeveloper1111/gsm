@@ -1,17 +1,26 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiGet, apiGetBlob, apiPost, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
+import type {
+  CreatePaymentData,
+  CreateRefundData,
+  IndexPaymentParams,
+  Payment,
+} from "@/models/payment";
 
 const r = apiRoutes.payments;
 
 export const paymentService = {
-  list: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.index(), params),
+  list: (params?: IndexPaymentParams) =>
+    apiGet<ApiSuccessResponse<Payment[]>>(
+      r.index(),
+      params as QueryParams | undefined,
+    ),
 
-  create: (body: unknown) =>
-    apiPost<ApiSuccessResponse<unknown>>(r.store(), body),
+  create: (body: CreatePaymentData) =>
+    apiPost<ApiSuccessResponse<Payment>>(r.store(), body),
 
-  refund: (body: unknown) =>
+  refund: (body: CreateRefundData) =>
     apiPost<ApiSuccessResponse<unknown>>(r.refund(), body),
 
   evidence: (
@@ -21,13 +30,13 @@ export const paymentService = {
   ) => apiGetBlob(r.evidence(paymentId, fileIndex), params),
 
   show: (id: number | string, params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.show(id), params),
+    apiGet<ApiSuccessResponse<Payment>>(r.show(id), params),
 
   status: (paymentIntentId: string, params?: QueryParams) =>
     apiGet<ApiSuccessResponse<unknown>>(r.status(paymentIntentId), params),
 
   repay: (id: number | string, body?: unknown) =>
-    apiPost<ApiSuccessResponse<unknown>>(r.repay(id), body),
+    apiPost<ApiSuccessResponse<Payment>>(r.repay(id), body),
 
   cancel: (id: number | string, body?: unknown) =>
     apiPost<ApiSuccessResponse<unknown>>(r.cancel(id), body),

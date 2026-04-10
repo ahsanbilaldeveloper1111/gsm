@@ -1,5 +1,6 @@
 "use client";
 
+import type { UseMutationResult } from "@tanstack/react-query";
 import {
   createContext,
   useCallback,
@@ -8,10 +9,9 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useAuthSessionMutations } from "@/hooks/auth/use-auth-session-mutations";
 import { getStoredToken } from "@/lib/auth/token-store";
-import { bootstrapTokenFromServer } from "@/services/token.service";
-import type { LoginPayload } from "@/services/auth.service";
-import { loginRequest, logoutRequest } from "@/services/auth.service";
+import type { LoginPayload, LoginResult } from "@/services/auth.service";
 
 type AuthContextValue = {
   token: string | null;
@@ -19,7 +19,9 @@ type AuthContextValue = {
   bootstrapError: Error | null;
   login: (payload: LoginPayload) => Promise<void>;
   logout: () => Promise<void>;
-  refreshServerToken: () => Promise<void>;
+  refreshServerToken: () => Promise<string>;
+  /** Same credentials flow as `login()`; exposes React Query mutation state. */
+  loginMutation: UseMutationResult<LoginResult, Error, LoginPayload>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -29,14 +31,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
 
+  const {
+    loginMutation,
+    login: loginInner,
+    logout,
+    refreshServerToken,
+  } = useAuthSessionMutations(setToken);
+
+  const login = useCallback(
+    async (payload: LoginPayload) => {
+      setBootstrapError(null);
+      await loginInner(payload);
+    },
+    [loginInner],
+  );
+
   useEffect(() => {
     setToken(getStoredToken());
-  }, []);
-
-  const refreshServerToken = useCallback(async () => {
-    setBootstrapError(null);
-    const jwt = await bootstrapTokenFromServer();
-    setToken(jwt);
   }, []);
 
   useEffect(() => {
@@ -46,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsBootstrapping(false);
         return;
       }
+      setBootstrapError(null);
       try {
         await refreshServerToken();
       } catch (e) {
@@ -63,19 +75,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [refreshServerToken]);
 
-  const login = useCallback(async (payload: LoginPayload) => {
-    setBootstrapError(null);
-    const res = await loginRequest(payload);
-    const jwt = res.access_token ?? res.token;
-    if (jwt) setToken(jwt);
-    else setToken(getStoredToken());
-  }, []);
-
-  const logout = useCallback(async () => {
-    await logoutRequest();
-    setToken(null);
-  }, []);
-
   const value = useMemo(
     () => ({
       token,
@@ -84,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       refreshServerToken,
+      loginMutation,
     }),
     [
       token,
@@ -92,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       refreshServerToken,
+      loginMutation,
     ],
   );
 

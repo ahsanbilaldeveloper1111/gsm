@@ -1,4 +1,10 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
+import type {
+  CreateInvoiceData,
+  Invoice,
+  IndexInvoiceParams,
+  UpdateInvoiceData,
+} from "@/models/invoice";
 import {
   apiDelete,
   apiGet,
@@ -7,22 +13,25 @@ import {
   apiPut,
   type QueryParams,
 } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
 
 const r = apiRoutes.invoices;
 
 export const invoiceService = {
-  list: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.index(), params),
+  list: (params?: IndexInvoiceParams) =>
+    apiGet<ApiSuccessResponse<Invoice[]>>(
+      r.index(),
+      params as QueryParams | undefined,
+    ),
 
-  create: (body: unknown) =>
-    apiPost<ApiSuccessResponse<unknown>>(r.store(), body),
+  create: (body: CreateInvoiceData) =>
+    apiPost<ApiSuccessResponse<Invoice>>(r.store(), body),
 
   show: (id: number | string, params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.show(id), params),
+    apiGet<ApiSuccessResponse<Invoice>>(r.show(id), params),
 
   details: (id: number | string, params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.details(id), params),
+    apiGet<ApiSuccessResponse<Invoice>>(r.details(id), params),
 
   pdf: (id: number | string, params?: QueryParams) =>
     apiGetBlob(r.pdf(id), params),
@@ -42,8 +51,8 @@ export const invoiceService = {
   stripePaymentLink: (id: number | string, body?: unknown) =>
     apiPost<ApiSuccessResponse<unknown>>(r.stripePaymentLink(id), body),
 
-  update: (id: number | string, body: unknown) =>
-    apiPut<ApiSuccessResponse<unknown>>(r.update(id), body),
+  update: (id: number | string, body: UpdateInvoiceData) =>
+    apiPut<ApiSuccessResponse<Invoice>>(r.update(id), body),
 
   destroy: (id: number | string) =>
     apiDelete<ApiSuccessResponse<unknown>>(r.destroy(id)),

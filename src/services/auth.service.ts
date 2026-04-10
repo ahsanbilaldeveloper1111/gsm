@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api/axios-client";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { clearStoredToken, setStoredToken } from "@/lib/auth/token-store";
 

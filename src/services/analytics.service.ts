@@ -1,54 +1,81 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiGet, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
+import type {
+  AnalyticCounterResponse,
+  DashboardChartsData,
+  DashboardCounters,
+  DashboardOverview,
+  ExpenseBreakdownItem,
+  ExpenseTrendItem,
+  InventoryStatusDistribution,
+  InventoryValueItem,
+  ProductSpentByCompany,
+  ProfitLossSummary,
+  RecentActivitySummary,
+  RevenueTrendItem,
+  TopSellingProduct,
+} from "@/models/analytics";
 
-async function get(
+async function get<T = unknown>(
   path: string,
   params?: QueryParams,
-): Promise<ApiSuccessResponse<unknown>> {
-  return apiGet<ApiSuccessResponse<unknown>>(path, params);
+): Promise<ApiSuccessResponse<T>> {
+  return apiGet<ApiSuccessResponse<T>>(path, params);
 }
 
 export const analyticsService = {
   dashboardCounters: (p?: QueryParams) =>
-    get(apiRoutes.analytics.dashboardCounters(), p),
+    get<DashboardCounters>(apiRoutes.analytics.dashboardCounters(), p),
   dashboardCharts: (p?: QueryParams) =>
-    get(apiRoutes.analytics.dashboardCharts(), p),
-  revenueTrend: (p?: QueryParams) => get(apiRoutes.analytics.revenueTrend(), p),
-  expenseTrend: (p?: QueryParams) => get(apiRoutes.analytics.expenseTrend(), p),
+    get<DashboardChartsData>(apiRoutes.analytics.dashboardCharts(), p),
+  revenueTrend: (p?: QueryParams) =>
+    get<RevenueTrendItem[]>(apiRoutes.analytics.revenueTrend(), p),
+  expenseTrend: (p?: QueryParams) =>
+    get<ExpenseTrendItem[]>(apiRoutes.analytics.expenseTrend(), p),
   inventoryStatus: (p?: QueryParams) =>
-    get(apiRoutes.analytics.inventoryStatus(), p),
-  topProducts: (p?: QueryParams) => get(apiRoutes.analytics.topProducts(), p),
+    get<InventoryStatusDistribution>(
+      apiRoutes.analytics.inventoryStatus(),
+      p,
+    ),
+  topProducts: (p?: QueryParams) =>
+    get<TopSellingProduct[]>(apiRoutes.analytics.topProducts(), p),
   expenseBreakdown: (p?: QueryParams) =>
-    get(apiRoutes.analytics.expenseBreakdown(), p),
+    get<ExpenseBreakdownItem[]>(apiRoutes.analytics.expenseBreakdown(), p),
   inventoryValue: (p?: QueryParams) =>
-    get(apiRoutes.analytics.inventoryValue(), p),
+    get<InventoryValueItem[]>(apiRoutes.analytics.inventoryValue(), p),
   recentActivity: (p?: QueryParams) =>
-    get(apiRoutes.analytics.recentActivity(), p),
-  profitLoss: (p?: QueryParams) => get(apiRoutes.analytics.profitLoss(), p),
+    get<RecentActivitySummary>(apiRoutes.analytics.recentActivity(), p),
+  profitLoss: (p?: QueryParams) =>
+    get<ProfitLossSummary>(apiRoutes.analytics.profitLoss(), p),
   productsSpentByCompany: (p?: QueryParams) =>
-    get(apiRoutes.analytics.productsSpentByCompany(), p),
-  index: (p?: QueryParams) => get(apiRoutes.analytics.index(), p),
-  counters: (p?: QueryParams) => get(apiRoutes.analytics.counters(), p),
+    get<ProductSpentByCompany[]>(
+      apiRoutes.analytics.productsSpentByCompany(),
+      p,
+    ),
+  index: (p?: QueryParams) => get<unknown>(apiRoutes.analytics.index(), p),
+  counters: (p?: QueryParams) =>
+    get<AnalyticCounterResponse>(apiRoutes.analytics.counters(), p),
   dashboardOverview: (p?: QueryParams) =>
-    get(apiRoutes.analytics.dashboardOverview(), p),
-  byMonths: (p?: QueryParams) => get(apiRoutes.analytics.byMonths(), p),
+    get<DashboardOverview>(apiRoutes.analytics.dashboardOverview(), p),
+  byMonths: (p?: QueryParams) =>
+    get<unknown>(apiRoutes.analytics.byMonths(), p),
 };
 
 export async function fetchAnalyticsDashboardCounters(): Promise<
-  ApiSuccessResponse<unknown>
+  ApiSuccessResponse<DashboardCounters>
 > {
   return analyticsService.dashboardCounters();
 }
 
 export async function fetchAnalyticsDashboardCharts(): Promise<
-  ApiSuccessResponse<unknown>
+  ApiSuccessResponse<DashboardChartsData>
 > {
   return analyticsService.dashboardCharts();
 }
 
 export async function fetchAnalyticsDashboardOverview(): Promise<
-  ApiSuccessResponse<unknown>
+  ApiSuccessResponse<DashboardOverview>
 > {
   return analyticsService.dashboardOverview();
 }

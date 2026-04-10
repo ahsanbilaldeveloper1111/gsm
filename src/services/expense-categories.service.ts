@@ -1,21 +1,22 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
+import type { ExpenseCategory } from "@/models/expense";
 import { apiDelete, apiGet, apiPost, apiPut, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
 
 const r = apiRoutes.expenseCategories;
 
 export const expenseCategoryService = {
   list: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.index(), params),
+    apiGet<ApiSuccessResponse<ExpenseCategory[]>>(r.index(), params),
 
   create: (body: unknown) =>
-    apiPost<ApiSuccessResponse<unknown>>(r.store(), body),
+    apiPost<ApiSuccessResponse<ExpenseCategory>>(r.store(), body),
 
   show: (id: number | string, params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.show(id), params),
+    apiGet<ApiSuccessResponse<ExpenseCategory>>(r.show(id), params),
 
   update: (id: number | string, body: unknown) =>
-    apiPut<ApiSuccessResponse<unknown>>(r.update(id), body),
+    apiPut<ApiSuccessResponse<ExpenseCategory>>(r.update(id), body),
 
   destroy: (id: number | string) =>
     apiDelete<ApiSuccessResponse<unknown>>(r.destroy(id)),

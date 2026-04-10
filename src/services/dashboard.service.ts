@@ -1,6 +1,6 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiGet, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
 
 export async function fetchDashboard(): Promise<
   ApiSuccessResponse<unknown>

@@ -1,4 +1,10 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
+import type {
+  CreateExpenseData,
+  Expense,
+  IndexExpenseParams,
+  UpdateExpenseData,
+} from "@/models/expense";
 import {
   apiDelete,
   apiGet,
@@ -6,23 +12,26 @@ import {
   apiPost,
   type QueryParams,
 } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
 
 const r = apiRoutes.expenses;
 
 export const expenseService = {
-  list: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.index(), params),
+  list: (params?: IndexExpenseParams) =>
+    apiGet<ApiSuccessResponse<Expense[]>>(
+      r.index(),
+      params as QueryParams | undefined,
+    ),
 
-  create: (body: unknown) =>
-    apiPost<ApiSuccessResponse<unknown>>(r.store(), body),
+  create: (body: CreateExpenseData) =>
+    apiPost<ApiSuccessResponse<Expense>>(r.store(), body),
 
   /** POST update (per API doc) */
-  updatePost: (id: number | string, body: unknown) =>
-    apiPost<ApiSuccessResponse<unknown>>(r.update(id), body),
+  updatePost: (id: number | string, body: UpdateExpenseData) =>
+    apiPost<ApiSuccessResponse<Expense>>(r.update(id), body),
 
   show: (id: number | string, params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.show(id), params),
+    apiGet<ApiSuccessResponse<Expense>>(r.show(id), params),
 
   pdf: (id: number | string, params?: QueryParams) =>
     apiGetBlob(r.pdf(id), params),

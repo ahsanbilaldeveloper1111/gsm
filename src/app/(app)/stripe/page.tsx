@@ -1,4 +1,4 @@
-import { StripeView } from "@/components/pages/list-views";
+import { StripeModuleView } from "@/components/views/stripe-module-view";
 import { PageFrame } from "@/components/layout/page-frame";
 import { PageHeader } from "@/components/ui/page-header";
 
@@ -9,10 +9,10 @@ export default function StripePage() {
     <PageFrame>
       <PageHeader
         title="Stripe"
-        description="Publishable key and Stripe-backed payment helpers (see API for full flows)."
+        description="Publishable key, incomplete payments, and fee snapshots (React Query)."
       />
       <div className="mt-8">
-        <StripeView />
+        <StripeModuleView />
       </div>
     </PageFrame>
   );

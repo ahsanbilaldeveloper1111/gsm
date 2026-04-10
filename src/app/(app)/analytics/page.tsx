@@ -1,4 +1,4 @@
-import { AnalyticsModuleView } from "@/components/pages/analytics-module-view";
+import { AnalyticsModuleView } from "@/components/views/analytics-module-view";
 import { PageFrame } from "@/components/layout/page-frame";
 import { PageHeader } from "@/components/ui/page-header";
 

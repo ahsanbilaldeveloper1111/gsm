@@ -1,4 +1,5 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
+import type { Company } from "@/models/company";
 import {
   apiDelete,
   apiGet,
@@ -8,16 +9,16 @@ import {
   apiPut,
   type QueryParams,
 } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
 
 const r = apiRoutes.company;
 
 export const companyService = {
   list: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.index(), params),
+    apiGet<ApiSuccessResponse<Company[]>>(r.index(), params),
 
   show: (id: number | string, params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.show(id), params),
+    apiGet<ApiSuccessResponse<Company>>(r.show(id), params),
 
   importCompanies: (body: FormData) =>
     apiPostForm<ApiSuccessResponse<unknown>>(r.import(), body),

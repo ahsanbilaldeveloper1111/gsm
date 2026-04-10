@@ -1,6 +1,6 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiDelete, apiGet, apiPost, apiPut, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
 
 const r = apiRoutes.productCategories;
 

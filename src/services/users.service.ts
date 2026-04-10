@@ -1,18 +1,19 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiDelete, apiGet, apiPost, apiPut, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
+import type { User } from "@/models/user";
 
 export async function fetchUsers(
   params?: QueryParams,
-): Promise<ApiSuccessResponse<unknown>> {
-  return apiGet<ApiSuccessResponse<unknown>>(apiRoutes.users.index(), params);
+): Promise<ApiSuccessResponse<User[]>> {
+  return apiGet<ApiSuccessResponse<User[]>>(apiRoutes.users.index(), params);
 }
 
 export async function fetchUser(
   id: number | string,
   params?: QueryParams,
-): Promise<ApiSuccessResponse<unknown>> {
-  return apiGet<ApiSuccessResponse<unknown>>(
+): Promise<ApiSuccessResponse<User>> {
+  return apiGet<ApiSuccessResponse<User>>(
     apiRoutes.users.show(id),
     params,
   );

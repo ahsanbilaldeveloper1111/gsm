@@ -1,4 +1,4 @@
-import { ProductsView } from "@/components/pages/list-views";
+import { ProductsView } from "@/components/views/list-views";
 import { PageFrame } from "@/components/layout/page-frame";
 import { PageHeader } from "@/components/ui/page-header";
 

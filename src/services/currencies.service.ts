@@ -1,21 +1,37 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
-import { apiDelete, apiGet, apiPost, apiPut, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import {
+  apiDelete,
+  apiGet,
+  apiPost,
+  apiPut,
+  type QueryParams,
+} from "@/lib/api/http";
+import { apiRoutes } from "@/lib/routes/api-routes";
+import type {
+  CreateCurrencyData,
+  Currency,
+  CurrencyStats,
+  IndexCurrencyParams,
+  UpdateCurrencyData,
+} from "@/models/currency";
 
 const r = apiRoutes.currencies;
 
 export const currencyService = {
-  list: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.index(), params),
+  list: (params?: IndexCurrencyParams) =>
+    apiGet<ApiSuccessResponse<Currency[]>>(
+      r.index(),
+      params as QueryParams | undefined,
+    ),
 
   active: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.active(), params),
+    apiGet<ApiSuccessResponse<Currency[]>>(r.active(), params),
 
   base: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.base(), params),
+    apiGet<ApiSuccessResponse<Currency>>(r.base(), params),
 
   byCode: (code: string, params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.code(code), params),
+    apiGet<ApiSuccessResponse<Currency>>(r.code(code), params),
 
   updateRates: (body?: unknown) =>
     apiPost<ApiSuccessResponse<unknown>>(r.updateRates(), body),
@@ -24,7 +40,7 @@ export const currencyService = {
     apiPost<ApiSuccessResponse<unknown>>(r.convert(), body),
 
   stats: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<unknown>>(r.stats(), params),
+    apiGet<ApiSuccessResponse<CurrencyStats>>(r.stats(), params),
 
   recentlyUpdated: (params?: QueryParams) =>
     apiGet<ApiSuccessResponse<unknown>>(r.recentlyUpdated(), params),
@@ -32,10 +48,11 @@ export const currencyService = {
   supported: (params?: QueryParams) =>
     apiGet<ApiSuccessResponse<unknown>>(r.supported(), params),
 
-  add: (body: unknown) => apiPost<ApiSuccessResponse<unknown>>(r.add(), body),
+  add: (body: CreateCurrencyData) =>
+    apiPost<ApiSuccessResponse<Currency>>(r.add(), body),
 
-  update: (id: number | string, body: unknown) =>
-    apiPut<ApiSuccessResponse<unknown>>(r.update(id), body),
+  update: (id: number | string, body: UpdateCurrencyData) =>
+    apiPut<ApiSuccessResponse<Currency>>(r.update(id), body),
 
   destroy: (id: number | string) =>
     apiDelete<ApiSuccessResponse<unknown>>(r.destroy(id)),

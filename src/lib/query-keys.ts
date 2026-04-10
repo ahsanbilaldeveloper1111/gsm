@@ -13,6 +13,8 @@ export const queryKeys = {
   },
   tokenPublic: {
     all: ["tokenPublic"] as const,
+    get: (params: Record<string, unknown> | null) =>
+      [...queryKeys.tokenPublic.all, "get", params] as const,
   },
   user: {
     all: ["user"] as const,
@@ -21,6 +23,8 @@ export const queryKeys = {
   dashboard: {
     all: ["dashboard"] as const,
     index: () => [...queryKeys.dashboard.all, "index"] as const,
+    indexWithParams: (params: Record<string, unknown> | null) =>
+      [...queryKeys.dashboard.all, "index", params] as const,
   },
   analytics: {
     all: ["analytics"] as const,
@@ -84,8 +88,12 @@ export const queryKeys = {
     all: ["invoices"] as const,
     list: (params: Record<string, unknown> | null) =>
       [...queryKeys.invoices.all, "list", params] as const,
+    /** `GET …/invoices/:id` (show) */
     detail: (id: number | string | null) =>
       [...queryKeys.invoices.all, "detail", id] as const,
+    /** `GET …/invoices/:id/details` */
+    details: (id: number | string | null) =>
+      [...queryKeys.invoices.all, "details", id] as const,
   },
   payments: {
     all: ["payments"] as const,
@@ -186,14 +194,26 @@ export const queryKeys = {
     all: ["reports"] as const,
     profitLoss: (params: Record<string, unknown> | null) =>
       [...queryKeys.reports.all, "profitLoss", params] as const,
-    accountsReceivableAging: () =>
-      [...queryKeys.reports.all, "accountsReceivableAging"] as const,
-    vatSummary: () => [...queryKeys.reports.all, "vatSummary"] as const,
-    customerStatements: () =>
-      [...queryKeys.reports.all, "customerStatements"] as const,
-    paymentHistory: () =>
-      [...queryKeys.reports.all, "paymentHistory"] as const,
-    dashboard: () => [...queryKeys.reports.all, "dashboard"] as const,
+    accountsReceivableAging: (params: Record<string, unknown> | null) =>
+      [...queryKeys.reports.all, "accountsReceivableAging", params] as const,
+    vatSummary: (params: Record<string, unknown> | null) =>
+      [...queryKeys.reports.all, "vatSummary", params] as const,
+    customerStatements: (params: Record<string, unknown> | null) =>
+      [...queryKeys.reports.all, "customerStatements", params] as const,
+    paymentHistory: (params: Record<string, unknown> | null) =>
+      [...queryKeys.reports.all, "paymentHistory", params] as const,
+    arAging: (params: Record<string, unknown> | null) =>
+      [...queryKeys.reports.all, "arAging", params] as const,
+    salesExpense: (params: Record<string, unknown> | null) =>
+      [...queryKeys.reports.all, "salesExpense", params] as const,
+    profitLossEnhanced: (params: Record<string, unknown> | null) =>
+      [...queryKeys.reports.all, "profitLossEnhanced", params] as const,
+    vatSummaryEnhanced: (params: Record<string, unknown> | null) =>
+      [...queryKeys.reports.all, "vatSummaryEnhanced", params] as const,
+    paymentHistoryEnhanced: (params: Record<string, unknown> | null) =>
+      [...queryKeys.reports.all, "paymentHistoryEnhanced", params] as const,
+    dashboard: (params: Record<string, unknown> | null) =>
+      [...queryKeys.reports.all, "dashboard", params] as const,
   },
   stripe: {
     all: ["stripe"] as const,
@@ -211,6 +231,10 @@ export const queryKeys = {
     all: ["inventory"] as const,
     list: (params: Record<string, unknown> | null) =>
       [...queryKeys.inventory.all, "list", params] as const,
+    summary: (params: Record<string, unknown> | null) =>
+      [...queryKeys.inventory.all, "summary", params] as const,
+    stats: (params: Record<string, unknown> | null) =>
+      [...queryKeys.inventory.all, "stats", params] as const,
     detail: (id: number | string | null) =>
       [...queryKeys.inventory.all, "detail", id] as const,
     locations: {

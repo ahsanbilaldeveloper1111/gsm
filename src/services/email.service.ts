@@ -1,6 +1,6 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiPost } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
 
 export async function sendEmail(
   body: unknown,

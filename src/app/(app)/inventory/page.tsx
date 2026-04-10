@@ -1,4 +1,4 @@
-import { InventoryView } from "@/components/pages/list-views";
+import { InventoryModuleView } from "@/components/views/inventory-module-view";
 import { PageFrame } from "@/components/layout/page-frame";
 import { PageHeader } from "@/components/ui/page-header";
 
@@ -9,10 +9,10 @@ export default function InventoryPage() {
     <PageFrame>
       <PageHeader
         title="Inventory"
-        description="Stock locations, items, suppliers, and movements."
+        description="List, summary, stats, locations, suppliers, and items (React Query)."
       />
       <div className="mt-8">
-        <InventoryView />
+        <InventoryModuleView />
       </div>
     </PageFrame>
   );

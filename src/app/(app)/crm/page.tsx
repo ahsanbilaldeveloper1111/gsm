@@ -1,4 +1,4 @@
-import { CrmView } from "@/components/pages/list-views";
+import { CrmView } from "@/components/views/list-views";
 import { PageFrame } from "@/components/layout/page-frame";
 import { PageHeader } from "@/components/ui/page-header";
 

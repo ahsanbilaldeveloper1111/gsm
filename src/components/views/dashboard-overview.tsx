@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useDisplayCurrency } from "@/contexts/currency-display-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useCurrentUser } from "@/hooks/auth/use-current-user";
 import { useAnalyticsDashboardCounters } from "@/hooks/analytics/use-analytics-dashboard-counters";
@@ -10,26 +11,47 @@ import { useDashboard } from "@/hooks/dashboard/use-dashboard";
 import { JsonPanel } from "@/components/dashboard/json-panel";
 import { MetricCard } from "@/components/dashboard/metric-card";
 
+/** Match nested counter keys that represent money (heuristic). */
+const MONEY_KEY = /amount|revenue|fee|price|balance|paid|tax|subtotal|outstanding|total|value|cost|net|gross|processing/i;
+
+function flattenNumericLeaves(
+  obj: unknown,
+  prefix = "",
+): { path: string; value: number }[] {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return [];
+  const out: { path: string; value: number }[] = [];
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    const path = prefix ? `${prefix} · ${k}` : k;
+    if (typeof v === "number" && Number.isFinite(v)) {
+      out.push({ path, value: v });
+    } else if (v && typeof v === "object" && !Array.isArray(v)) {
+      out.push(...flattenNumericLeaves(v, path));
+    }
+  }
+  return out;
+}
+
 function extractCounterEntries(
   payload: unknown,
+  formatMoney: (n: number) => string,
 ): { label: string; value: string }[] {
   if (!payload || typeof payload !== "object") return [];
   const root = payload as Record<string, unknown>;
   const data = root.data;
-  if (data && typeof data === "object" && !Array.isArray(data)) {
-    return Object.entries(data as Record<string, unknown>)
-      .filter(([, v]) => typeof v === "number" || typeof v === "string")
-      .slice(0, 6)
-      .map(([k, v]) => ({
-        label: k.replace(/_/g, " "),
-        value: typeof v === "number" ? v.toLocaleString() : String(v),
-      }));
-  }
-  return [];
+  if (!data || typeof data !== "object") return [];
+  const leaves = flattenNumericLeaves(data);
+  return leaves.slice(0, 12).map(({ path, value }) => {
+    const isMoney = MONEY_KEY.test(path.toLowerCase());
+    return {
+      label: path.replace(/_/g, " "),
+      value: isMoney ? formatMoney(value) : value.toLocaleString(),
+    };
+  });
 }
 
 export function DashboardOverview() {
   const { bootstrapError } = useAuth();
+  const { formatInCurrency, computedDefault } = useDisplayCurrency();
   const userQuery = useCurrentUser();
   const dashboardQuery = useDashboard();
   const countersQuery = useAnalyticsDashboardCounters();
@@ -37,8 +59,11 @@ export function DashboardOverview() {
   const overviewQuery = useAnalyticsDashboardOverview();
 
   const metrics = useMemo(
-    () => extractCounterEntries(countersQuery.data),
-    [countersQuery.data],
+    () =>
+      extractCounterEntries(countersQuery.data, (n) =>
+        formatInCurrency(n, computedDefault),
+      ),
+    [countersQuery.data, formatInCurrency, computedDefault],
   );
 
   const dashboardPanelData = useMemo(() => {
@@ -110,7 +135,7 @@ export function DashboardOverview() {
               Highlights
             </h2>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              From analytics dashboard counters (first numeric fields).
+              Analytics counters — money-like fields use your header currency.
             </p>
           </div>
         </div>

@@ -3,7 +3,7 @@
  * the API should ignore it for these paths.
  */
 import { apiGet, apiPost, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/apiRoutes";
+import { apiRoutes } from "@/lib/routes/api-routes";
 
 const pub = apiRoutes.public;
 

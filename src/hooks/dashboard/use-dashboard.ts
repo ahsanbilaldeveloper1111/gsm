@@ -1,15 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useAuthQueryEnabled } from "@/hooks/use-auth-query-enabled";
 import { queryKeys } from "@/lib/query-keys";
 import { fetchDashboard } from "@/services/dashboard.service";
-import { useAuth } from "@/contexts/auth-context";
 
 export function useDashboard() {
-  const { token, isBootstrapping } = useAuth();
+  const enabled = useAuthQueryEnabled();
   return useQuery({
     queryKey: queryKeys.dashboard.index(),
     queryFn: fetchDashboard,
-    enabled: !isBootstrapping && !!token,
+    enabled,
   });
 }
