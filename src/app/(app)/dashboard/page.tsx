@@ -11,7 +11,7 @@ export default function DashboardPage() {
         title="Dashboard"
         description="Overview of billing metrics and live API snapshots for debugging."
       />
-      <div className="mt-8 space-y-10">
+      <div className="mt-10 space-y-10">
         <DashboardOverview />
       </div>
     </PageFrame>

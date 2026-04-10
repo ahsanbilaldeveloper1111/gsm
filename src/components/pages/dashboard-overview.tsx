@@ -84,12 +84,12 @@ export function DashboardOverview() {
     <>
       {bootstrapError ? (
         <div
-          className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-100"
+          className="mb-10 rounded-2xl border border-rose-200/90 bg-gradient-to-br from-rose-50 to-white p-5 text-sm text-rose-900 shadow-sm dark:border-rose-900/50 dark:from-rose-950/50 dark:to-zinc-950 dark:text-rose-100"
           role="alert"
         >
-          <p className="font-medium">Could not load API token</p>
+          <p className="font-semibold">Could not load API token</p>
           <p className="mt-1 opacity-90">{bootstrapError.message}</p>
-          <p className="mt-2 text-xs opacity-80">
+          <p className="mt-3 text-xs opacity-80">
             Set{" "}
             <code className="rounded bg-black/5 px-1 dark:bg-white/10">
               API_APP_SECRET
@@ -104,19 +104,23 @@ export function DashboardOverview() {
       ) : null}
 
       <section>
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          Highlights
-        </h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          From analytics dashboard counters (first numeric fields).
-        </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+              Highlights
+            </h2>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              From analytics dashboard counters (first numeric fields).
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {countersQuery.isLoading ? (
             <>
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="h-28 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900"
+                  className="h-32 animate-pulse rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900"
                 />
               ))}
             </>
@@ -132,10 +136,15 @@ export function DashboardOverview() {
         </div>
       </section>
 
-      <section className="mt-10 space-y-4">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          API responses
-        </h2>
+      <section className="mt-14 space-y-6">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            API responses
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Raw JSON for debugging and integration checks.
+          </p>
+        </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <JsonPanel
             title="GET /dashboard"
