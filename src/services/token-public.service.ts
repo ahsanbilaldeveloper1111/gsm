@@ -3,7 +3,7 @@
  * Prefer `bootstrapTokenFromServer` + `POST /api/auth/laravel-token` for secrets.
  */
 import { apiGet, apiPost, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 
 const t = apiRoutes.token;
 

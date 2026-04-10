@@ -1,6 +1,6 @@
-import { ReportsModuleView } from "@/components/views/reports-module-view";
-import { PageFrame } from "@/components/layout/page-frame";
-import { PageHeader } from "@/components/ui/page-header";
+import { ReportsModuleView } from "@/components/views/ReportsModuleView";
+import { PageFrame } from "@/components/layout/PageFrame";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata = { title: "Reports" };
 

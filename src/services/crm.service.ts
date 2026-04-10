@@ -1,7 +1,7 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiGet, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
-import type { Company } from "@/models/company";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
+import type { Company } from "@/models/Company";
 
 const r = apiRoutes.crm;
 

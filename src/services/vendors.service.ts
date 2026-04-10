@@ -1,7 +1,7 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiDelete, apiGet, apiPost, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
-import type { Vendor } from "@/models/vendor";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
+import type { Vendor } from "@/models/Vendor";
 
 const r = apiRoutes.vendors;
 

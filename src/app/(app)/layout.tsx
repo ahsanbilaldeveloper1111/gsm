@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/layout/app-shell";
+import { AppShell } from "@/components/layout/AppShell";
 
 export default function AppLayout({
   children,

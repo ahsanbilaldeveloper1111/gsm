@@ -4,7 +4,7 @@ import type {
   Expense,
   IndexExpenseParams,
   UpdateExpenseData,
-} from "@/models/expense";
+} from "@/models/Expense";
 import {
   apiDelete,
   apiGet,
@@ -12,7 +12,7 @@ import {
   apiPost,
   type QueryParams,
 } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 
 const r = apiRoutes.expenses;
 

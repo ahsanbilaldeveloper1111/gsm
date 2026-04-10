@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api/axios-client";
+import { apiClient } from "@/lib/api/axiosClient";
 
 export type QueryParams = Record<
   string,

@@ -1,7 +1,7 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiDelete, apiGet, apiPost, apiPut, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
-import type { Rank, RankCreateData, RankUpdateData } from "@/models/rank";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
+import type { Rank, RankCreateData, RankUpdateData } from "@/models/Rank";
 
 const r = apiRoutes.ranks;
 

@@ -3,4 +3,4 @@ export {
   usePermission,
   useModuleAccess,
   type PermissionSummary,
-} from "@/hooks/permissions/use-permissions";
+} from "@/hooks/permissions/usePermissions";

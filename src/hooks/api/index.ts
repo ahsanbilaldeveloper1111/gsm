@@ -3,74 +3,74 @@
  * Prefer importing from here for discoverability, or from feature folders.
  */
 
-export * from "@/hooks/analytics/use-analytics-dashboard-counters";
-export * from "@/hooks/analytics/use-analytics-dashboard-charts";
-export * from "@/hooks/analytics/use-analytics-dashboard-overview";
-export * from "@/hooks/analytics/use-analytics-endpoints";
+export * from "@/hooks/analytics/useAnalyticsDashboardCounters";
+export * from "@/hooks/analytics/useAnalyticsDashboardCharts";
+export * from "@/hooks/analytics/useAnalyticsDashboardOverview";
+export * from "@/hooks/analytics/useAnalyticsEndpoints";
 
-export * from "@/hooks/audit-logs/use-audit-logs";
+export * from "@/hooks/audit-logs/useAuditLogs";
 
-export * from "@/hooks/auth/use-auth-mutations";
-export * from "@/hooks/auth/use-current-user";
-export * from "@/hooks/auth/use-login";
+export * from "@/hooks/auth/useAuthMutations";
+export * from "@/hooks/auth/useCurrentUser";
+export * from "@/hooks/auth/useLogin";
 
-export * from "@/hooks/company/use-companies";
-export * from "@/hooks/company/use-company";
+export * from "@/hooks/company/useCompanies";
+export * from "@/hooks/company/useCompany";
 
-export * from "@/hooks/crm/use-crm-companies";
+export * from "@/hooks/crm/useCrmCompanies";
 
-export * from "@/hooks/currencies/use-active-currencies";
-export * from "@/hooks/currencies/use-base-currency";
-export * from "@/hooks/currencies/use-currencies";
-export * from "@/hooks/currencies/use-currency-map";
+export * from "@/hooks/currencies/useActiveCurrencies";
+export * from "@/hooks/currencies/useBaseCurrency";
+export * from "@/hooks/currencies/useCurrencies";
+export * from "@/hooks/currencies/useCurrencyMap";
 
-export * from "@/hooks/customers/use-customer";
-export * from "@/hooks/customers/use-customers";
+export * from "@/hooks/customers/useCustomer";
+export * from "@/hooks/customers/useCustomers";
 
-export * from "@/hooks/dashboard/use-dashboard";
-export * from "@/hooks/dashboard/use-dashboard-params";
+export * from "@/hooks/dashboard/useDashboard";
+export * from "@/hooks/dashboard/useDashboardParams";
 
-export * from "@/hooks/email/use-send-email";
+export * from "@/hooks/email/useSendEmail";
 
-export * from "@/hooks/expense-categories/use-expense-categories";
-export * from "@/hooks/expenses/use-expense";
-export * from "@/hooks/expenses/use-expense-mutations";
-export * from "@/hooks/expenses/use-expenses";
+export * from "@/hooks/expense-categories/useExpenseCategories";
+export * from "@/hooks/expenses/useExpense";
+export * from "@/hooks/expenses/useExpenseMutations";
+export * from "@/hooks/expenses/useExpenses";
 
-export * from "@/hooks/inventory/use-inventory";
-export * from "@/hooks/inventory/use-inventory-endpoints";
+export * from "@/hooks/inventory/useInventory";
+export * from "@/hooks/inventory/useInventoryEndpoints";
 
-export * from "@/hooks/invoices/use-invoice";
-export * from "@/hooks/invoices/use-invoice-details";
-export * from "@/hooks/invoices/use-invoices";
+export * from "@/hooks/invoices/useInvoice";
+export * from "@/hooks/invoices/useInvoiceDetails";
+export * from "@/hooks/invoices/useInvoices";
 
-export * from "@/hooks/payments/use-payment";
-export * from "@/hooks/payments/use-payment-status";
-export * from "@/hooks/payments/use-payments";
+export * from "@/hooks/payments/usePayment";
+export * from "@/hooks/payments/usePaymentStatus";
+export * from "@/hooks/payments/usePayments";
 
 export * from "@/hooks/permissions";
 
-export * from "@/hooks/product-categories/use-product-categories";
+export * from "@/hooks/product-categories/useProductCategories";
 
-export * from "@/hooks/products/use-product";
-export * from "@/hooks/products/use-products";
+export * from "@/hooks/products/useProduct";
+export * from "@/hooks/products/useProducts";
 
-export * from "@/hooks/public-api/use-public-invoice-pay";
+export * from "@/hooks/public-api/usePublicInvoicePay";
 
-export * from "@/hooks/ranks/use-ranks";
+export * from "@/hooks/ranks/useRanks";
 
-export * from "@/hooks/reports/use-reports-dashboard";
-export * from "@/hooks/reports/use-reports-endpoints";
+export * from "@/hooks/reports/useReportsDashboard";
+export * from "@/hooks/reports/useReportsEndpoints";
 
-export * from "@/hooks/stripe/use-stripe-endpoints";
-export * from "@/hooks/stripe/use-stripe-publishable-key";
+export * from "@/hooks/stripe/useStripeEndpoints";
+export * from "@/hooks/stripe/useStripePublishableKey";
 
-export * from "@/hooks/token-public/use-token-public";
+export * from "@/hooks/token-public/useTokenPublic";
 
-export * from "@/hooks/users/use-user";
-export * from "@/hooks/users/use-users";
+export * from "@/hooks/users/useUser";
+export * from "@/hooks/users/useUsers";
 
-export * from "@/hooks/use-auth-query-enabled";
+export * from "@/hooks/useAuthQueryEnabled";
 
-export * from "@/hooks/vendors/use-vendor";
-export * from "@/hooks/vendors/use-vendors";
+export * from "@/hooks/vendors/useVendor";
+export * from "@/hooks/vendors/useVendors";

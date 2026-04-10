@@ -6,10 +6,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Project file and folder conventions
 
-- **Kebab-case** for all file names: `api-routes.ts`, `use-expense-mutations.ts`, `expenses-module-view.tsx`. Do not use camelCase file names (e.g. ~~`apiRoutes.ts`~~).
+- **Kebab-case** for domain folders only (`hooks/expenses/`, `components/views/`). **Utility/helper modules under `lib/`** use **camelCase** file names: `queryKeys.ts`, `extractApiData.ts`, `apiRoutes.ts`, `tokenStore.ts`, `navConfig.ts`, `appPaths.ts`, `routeModules.ts`, `defaultValues.ts`, `axiosClient.ts`.
+- **camelCase hook files** — `useExpenses.ts`, `useAuthSessionMutations.ts` (name matches the exported hook: `useExpenses`, `useAuthSessionMutations`).
+- **PascalCase component files** — `ExpensesModuleView.tsx`, `AppShell.tsx`, `PageFrame.tsx` (matches the exported component name).
 - **`app/`** — Next.js routes only (`page.tsx`, `layout.tsx`, route groups).
-- **`components/views/`** — Page-level UI for those routes (lists, module JSON explorers, forms). Not named `pages` to avoid clashing with `app/**/page.tsx`.
+- **`components/views/`** — Page-level UI for those routes. Not named `pages` (avoids clashing with `app/**/page.tsx`).
 - **`components/layout/`**, **`components/providers/`**, **`components/dashboard/`**, **`components/ui/`** — shared chrome and widgets.
-- **`hooks/<domain>/`** — One folder per API domain; hook files `use-*.ts` (e.g. `hooks/expenses/use-expenses.ts`).
+- **`hooks/<domain>/`** — API domain subfolders; each hook is `useXxx.ts` in camelCase.
 - **`services/*.service.ts`** — API clients; **`models/*.ts`** — TypeScript types aligned with Laravel resources.
-- **`lib/routes/api-routes.ts`** — Central Laravel API path builders (`apiRoutes` export).
+- **`lib/routes/apiRoutes.ts`** — Central Laravel API path builders (`apiRoutes` export).

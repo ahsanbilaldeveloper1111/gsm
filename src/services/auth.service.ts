@@ -1,7 +1,7 @@
-import { apiClient } from "@/lib/api/axios-client";
-import { apiRoutes } from "@/lib/routes/api-routes";
+import { apiClient } from "@/lib/api/axiosClient";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 import type { ApiSuccessResponse } from "@/lib/api/types";
-import { clearStoredToken, setStoredToken } from "@/lib/auth/token-store";
+import { clearStoredToken, setStoredToken } from "@/lib/auth/tokenStore";
 
 export type LoginPayload = {
   samaccountname: string;

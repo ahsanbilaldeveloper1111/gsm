@@ -6,14 +6,14 @@ import {
   apiPut,
   type QueryParams,
 } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 import type {
   CreateInventoryData,
   IndexInventoryParams,
   Inventory,
   InventoryStats,
   InventorySummary,
-} from "@/models/inventory";
+} from "@/models/Inventory";
 
 const r = apiRoutes.inventory;
 

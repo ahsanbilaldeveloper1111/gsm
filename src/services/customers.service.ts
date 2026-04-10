@@ -1,12 +1,12 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiDelete, apiGet, apiPost, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 import type {
   CreateCustomerData,
   Customer,
   IndexCustomerParams,
   UpdateCustomerData,
-} from "@/models/customer";
+} from "@/models/Customer";
 
 const r = apiRoutes.customers;
 

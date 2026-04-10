@@ -1,6 +1,6 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiGet, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 import type {
   AnalyticCounterResponse,
   DashboardChartsData,
@@ -15,7 +15,7 @@ import type {
   RecentActivitySummary,
   RevenueTrendItem,
   TopSellingProduct,
-} from "@/models/analytics";
+} from "@/models/Analytics";
 
 async function get<T = unknown>(
   path: string,

@@ -1,4 +1,4 @@
-import { setStoredToken } from "@/lib/auth/token-store";
+import { setStoredToken } from "@/lib/auth/tokenStore";
 
 export type BootstrapTokenResult = {
   token: string;

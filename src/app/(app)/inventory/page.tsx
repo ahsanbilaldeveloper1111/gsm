@@ -1,6 +1,6 @@
-import { InventoryModuleView } from "@/components/views/inventory-module-view";
-import { PageFrame } from "@/components/layout/page-frame";
-import { PageHeader } from "@/components/ui/page-header";
+import { InventoryModuleView } from "@/components/views/InventoryModuleView";
+import { PageFrame } from "@/components/layout/PageFrame";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata = { title: "Inventory" };
 

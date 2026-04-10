@@ -1,4 +1,4 @@
-import type { Currency } from "@/models/currency";
+import type { Currency } from "@/models/Currency";
 
 const COMMON_SYMBOLS: Record<string, string> = {
   USD: "$",

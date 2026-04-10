@@ -6,14 +6,14 @@ import {
   apiPut,
   type QueryParams,
 } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 import type {
   CreateCurrencyData,
   Currency,
   CurrencyStats,
   IndexCurrencyParams,
   UpdateCurrencyData,
-} from "@/models/currency";
+} from "@/models/Currency";
 
 const r = apiRoutes.currencies;
 

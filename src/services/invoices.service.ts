@@ -4,7 +4,7 @@ import type {
   Invoice,
   IndexInvoiceParams,
   UpdateInvoiceData,
-} from "@/models/invoice";
+} from "@/models/Invoice";
 import {
   apiDelete,
   apiGet,
@@ -13,7 +13,7 @@ import {
   apiPut,
   type QueryParams,
 } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 
 const r = apiRoutes.invoices;
 

@@ -1,6 +1,6 @@
-import { ProductCategoriesView } from "@/components/views/list-views";
-import { PageFrame } from "@/components/layout/page-frame";
-import { PageHeader } from "@/components/ui/page-header";
+import { ProductCategoriesView } from "@/components/views/ListViews";
+import { PageFrame } from "@/components/layout/PageFrame";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata = { title: "Product categories" };
 

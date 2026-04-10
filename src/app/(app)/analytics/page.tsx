@@ -1,6 +1,6 @@
-import { AnalyticsModuleView } from "@/components/views/analytics-module-view";
-import { PageFrame } from "@/components/layout/page-frame";
-import { PageHeader } from "@/components/ui/page-header";
+import { AnalyticsModuleView } from "@/components/views/AnalyticsModuleView";
+import { PageFrame } from "@/components/layout/PageFrame";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata = { title: "Analytics" };
 

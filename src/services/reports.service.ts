@@ -1,7 +1,7 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiGet, apiPost, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
-import type { DashboardOverview } from "@/models/analytics";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
+import type { DashboardOverview } from "@/models/Analytics";
 
 const r = apiRoutes.reports;
 

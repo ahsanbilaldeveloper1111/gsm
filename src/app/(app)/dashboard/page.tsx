@@ -1,6 +1,6 @@
-import { PageFrame } from "@/components/layout/page-frame";
-import { DashboardOverview } from "@/components/views/dashboard-overview";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageFrame } from "@/components/layout/PageFrame";
+import { DashboardOverview } from "@/components/views/DashboardOverview";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata = { title: "Dashboard" };
 

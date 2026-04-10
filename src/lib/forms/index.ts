@@ -12,5 +12,5 @@ export {
   updateExpenseFormDefaults,
   updatePaymentFormDefaults,
   updateProductCompanyPricingFormDefaults,
-} from "./default-values";
+} from "./defaultValues";
 export { omitUndefined } from "./payload";

@@ -1,12 +1,12 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { apiGet, apiGetBlob, apiPost, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 import type {
   CreatePaymentData,
   CreateRefundData,
   IndexPaymentParams,
   Payment,
-} from "@/models/payment";
+} from "@/models/Payment";
 
 const r = apiRoutes.payments;
 

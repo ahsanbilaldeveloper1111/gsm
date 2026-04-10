@@ -9,8 +9,8 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useAuthSessionMutations } from "@/hooks/auth/use-auth-session-mutations";
-import { getStoredToken } from "@/lib/auth/token-store";
+import { useAuthSessionMutations } from "@/hooks/auth/useAuthSessionMutations";
+import { getStoredToken } from "@/lib/auth/tokenStore";
 import type { LoginPayload, LoginResult } from "@/services/auth.service";
 
 type AuthContextValue = {

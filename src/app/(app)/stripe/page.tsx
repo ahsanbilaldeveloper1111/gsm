@@ -1,6 +1,6 @@
-import { StripeModuleView } from "@/components/views/stripe-module-view";
-import { PageFrame } from "@/components/layout/page-frame";
-import { PageHeader } from "@/components/ui/page-header";
+import { StripeModuleView } from "@/components/views/StripeModuleView";
+import { PageFrame } from "@/components/layout/PageFrame";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata = { title: "Stripe" };
 

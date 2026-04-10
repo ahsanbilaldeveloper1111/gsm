@@ -1,7 +1,7 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
-import type { ExpenseCategory } from "@/models/expense";
+import type { ExpenseCategory } from "@/models/Expense";
 import { apiDelete, apiGet, apiPost, apiPut, type QueryParams } from "@/lib/api/http";
-import { apiRoutes } from "@/lib/routes/api-routes";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 
 const r = apiRoutes.expenseCategories;
 

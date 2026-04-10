@@ -1,5 +1,5 @@
 import type { RawAxiosRequestHeaders } from "axios";
-import { getApiClient } from "@/lib/api/axios-client";
+import { getApiClient } from "@/lib/api/axiosClient";
 
 function headersToObject(h: HeadersInit | undefined): RawAxiosRequestHeaders | undefined {
   if (!h) return undefined;
@@ -18,7 +18,7 @@ function headersToObject(h: HeadersInit | undefined): RawAxiosRequestHeaders | u
 
 /**
  * JSON helpers on top of the shared Axios client (same `is_super_user` + Bearer behavior).
- * Prefer importing `apiClient` from `@/lib/api/axios-client` in new code.
+ * Prefer importing `apiClient` from `@/lib/api/axiosClient` in new code.
  */
 export async function apiFetchJson<T>(
   path: string,

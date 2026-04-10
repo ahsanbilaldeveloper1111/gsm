@@ -10,17 +10,17 @@ import {
 import {
   baseCurrencyFromResponse,
   useBaseCurrency,
-} from "@/hooks/currencies/use-base-currency";
+} from "@/hooks/currencies/useBaseCurrency";
 import {
   currenciesFromResponse,
   useActiveCurrencies,
-} from "@/hooks/currencies/use-active-currencies";
+} from "@/hooks/currencies/useActiveCurrencies";
 import {
   buildCurrencyMap,
   convertCurrency,
   formatCurrency,
 } from "@/lib/currency";
-import type { Currency } from "@/models/currency";
+import type { Currency } from "@/models/Currency";
 
 const STORAGE_KEY = "displayCurrencyCode";
 

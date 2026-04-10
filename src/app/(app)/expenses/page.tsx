@@ -1,6 +1,6 @@
-import { ExpensesModuleView } from "@/components/views/expenses-module-view";
-import { PageFrame } from "@/components/layout/page-frame";
-import { PageHeader } from "@/components/ui/page-header";
+import { ExpensesModuleView } from "@/components/views/ExpensesModuleView";
+import { PageFrame } from "@/components/layout/PageFrame";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata = { title: "Expenses" };
 
