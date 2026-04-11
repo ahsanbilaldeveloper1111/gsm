@@ -6,12 +6,12 @@ import { getStoredToken } from "@/lib/auth/tokenStore";
 import { queryKeys } from "@/lib/queryKeys";
 import type { LoginPayload } from "@/services/auth.service";
 import { loginRequest, logoutRequest } from "@/services/auth.service";
-import { bootstrapTokenFromServer } from "@/services/token.service";
 
 type SetToken = (token: string | null) => void;
 
 /**
- * Bootstrap, login, and logout via React Query mutations (services stay here, not in context).
+ * Login and logout via React Query mutations (services stay here, not in context).
+ * JWT comes only from login / 2FA flows — `expires_in` is stored for client-side session checks.
  */
 export function useAuthSessionMutations(setToken: SetToken) {
   const queryClient = useQueryClient();
@@ -41,17 +41,10 @@ export function useAuthSessionMutations(setToken: SetToken) {
     [logoutMutation],
   );
 
-  const refreshServerToken = useCallback(async () => {
-    const jwt = await bootstrapTokenFromServer();
-    setToken(jwt);
-    return jwt;
-  }, [setToken]);
-
   return {
     loginMutation,
     logoutMutation,
     login,
     logout,
-    refreshServerToken,
   };
 }

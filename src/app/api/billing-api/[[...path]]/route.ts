@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getServerBillingBackendPublicApiBaseUrl } from "@/lib/env";
 import { proxyRequestToUrl } from "@/lib/api/proxyRequestToUrl";
+import { logBillingProxyEnvMissing } from "@/lib/httpRequestFileLogger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +13,11 @@ async function handle(
   let base: string;
   try {
     base = getServerBillingBackendPublicApiBaseUrl();
-  } catch {
+  } catch (e) {
+    logBillingProxyEnvMissing({
+      route: "billing-api",
+      message: e instanceof Error ? e.message : String(e),
+    });
     return Response.json(
       { error: "Billing backend public API URL not configured" },
       { status: 500 },

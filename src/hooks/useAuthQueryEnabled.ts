@@ -2,8 +2,8 @@
 
 import { useAuth } from "@/contexts/auth-context";
 
-/** Use as `enabled` for React Query calls that require JWT after bootstrap. */
+/** Use as `enabled` for React Query calls that require JWT. */
 export function useAuthQueryEnabled(): boolean {
-  const { token, isBootstrapping } = useAuth();
-  return !isBootstrapping && !!token;
+  const { token } = useAuth();
+  return !!token;
 }

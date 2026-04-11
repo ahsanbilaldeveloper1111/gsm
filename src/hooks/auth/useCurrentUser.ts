@@ -16,12 +16,12 @@ function isNonRetryableAuthError(error: unknown): boolean {
  * Current user profile. **401** / **403** from `apiClient` redirect to `/login` globally (`axiosClient` response interceptor).
  */
 export function useCurrentUser() {
-  const { token, isBootstrapping } = useAuth();
+  const { token } = useAuth();
 
   return useQuery({
     queryKey: queryKeys.user.me(),
     queryFn: fetchCurrentUser,
-    enabled: !isBootstrapping && !!token,
+    enabled: !!token,
     retry: (failureCount, error) => {
       if (isNonRetryableAuthError(error)) return false;
       return failureCount < 3;

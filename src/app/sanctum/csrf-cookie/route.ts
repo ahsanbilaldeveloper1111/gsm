@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getServerBillingBackendAppOrigin } from "@/lib/env";
 import { proxyRequestToUrl } from "@/lib/api/proxyRequestToUrl";
+import { logBillingProxyEnvMissing } from "@/lib/httpRequestFileLogger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +10,11 @@ export async function GET(req: NextRequest) {
   let origin: string;
   try {
     origin = getServerBillingBackendAppOrigin();
-  } catch {
+  } catch (e) {
+    logBillingProxyEnvMissing({
+      route: "sanctum-csrf",
+      message: e instanceof Error ? e.message : String(e),
+    });
     return Response.json(
       { error: "Billing backend origin not configured" },
       { status: 500 },

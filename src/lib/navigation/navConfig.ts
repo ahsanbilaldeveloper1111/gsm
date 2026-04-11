@@ -15,10 +15,7 @@ export type NavGroup = {
 export const navigationGroups: NavGroup[] = [
   {
     title: "Overview",
-    items: [
-      { label: "Dashboard", href: appPaths.dashboard },
-      { label: "Analytics", href: appPaths.analytics },
-    ],
+    items: [{ label: "Dashboard", href: appPaths.dashboard }],
   },
   {
     title: "People & access",

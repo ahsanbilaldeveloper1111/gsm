@@ -10,6 +10,8 @@ export function proxy(request: NextRequest): NextResponse {
 export const config = {
   matcher: [
     "/",
-    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp|woff2?)$).*)",
+    // Exclude `api` and `sanctum` so Route Handlers receive POST bodies intact (proxy runs before handlers;
+    // matching `/api/*` can leave JSON bodies empty upstream).
+    "/((?!api|sanctum|_next/static|_next/image|favicon\\.ico|.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp|woff2?)$).*)",
   ],
 };

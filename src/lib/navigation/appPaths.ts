@@ -2,6 +2,9 @@
 export const appPaths = {
   login: "/login",
   dashboard: "/dashboard",
+  /** Same page as dashboard — scrolls to the Analytics charts block. */
+  dashboardAnalytics: "/dashboard#analytics",
+  /** @deprecated Use `dashboard` + charts / `dashboardAnalytics`; route redirects. */
   analytics: "/analytics",
   users: "/users",
   company: "/company",

@@ -1,7 +1,11 @@
-export interface AnalyticCounterResponse {
-  total_company_count: number;
-  total_customer_count: number;
-}
+/**
+ * `GET /analytics/counters` payload (`data`). Known fields are typed; the API
+ * may add more numeric counters — the dashboard maps every top-level number.
+ */
+export type AnalyticCounterResponse = {
+  total_company_count?: number;
+  total_customer_count?: number;
+} & Record<string, number | undefined>;
 
 export interface AnalyticsData {
   success: boolean;

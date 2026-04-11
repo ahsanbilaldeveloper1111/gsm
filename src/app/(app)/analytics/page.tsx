@@ -1,19 +1,7 @@
-import { AnalyticsModuleView } from "@/components/views/AnalyticsModuleView";
-import { PageFrame } from "@/components/layout/PageFrame";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { redirect } from "next/navigation";
+import { appPaths } from "@/lib/navigation/appPaths";
 
-export const metadata = { title: "Analytics" };
-
+/** Analytics charts and trends live on the dashboard (`#analytics`). */
 export default function AnalyticsPage() {
-  return (
-    <PageFrame>
-      <PageHeader
-        title="Analytics"
-        description="Revenue, expense, and operational analytics from the Accounts API."
-      />
-      <div className="mt-8">
-        <AnalyticsModuleView />
-      </div>
-    </PageFrame>
-  );
+  redirect(`${appPaths.dashboard}#analytics`);
 }

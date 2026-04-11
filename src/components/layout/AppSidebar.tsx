@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { NavIcon } from "@/components/layout/NavIcons";
 import type { AppPath } from "@/lib/navigation/appPaths";
@@ -19,9 +20,31 @@ function NavLink({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const active =
-    pathname === href ||
-    (href !== appPaths.dashboard && pathname.startsWith(`${href}/`));
+  const [hash, setHash] = useState("");
+
+  useEffect(() => {
+    const sync = () => setHash(typeof window !== "undefined" ? window.location.hash : "");
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, [pathname]);
+
+  const [base, fragment] = href.split("#");
+  const pathPart = base ?? href;
+  const wantsHash = fragment != null && fragment !== "";
+
+  let active = false;
+  if (pathname === pathPart || pathname.startsWith(`${pathPart}/`)) {
+    if (wantsHash) {
+      active = hash === `#${fragment}`;
+    } else if (pathPart === appPaths.dashboard && href === appPaths.dashboard) {
+      active = hash === "" || hash === "#";
+    } else {
+      active =
+        pathname === href ||
+        (pathPart !== appPaths.dashboard && pathname.startsWith(`${pathPart}/`));
+    }
+  }
   return (
     <Link
       href={href}

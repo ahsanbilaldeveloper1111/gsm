@@ -1,5 +1,9 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
-import { clearStoredToken, getStoredToken } from "@/lib/auth/tokenStore";
+import {
+  clearSessionIfExpired,
+  clearStoredToken,
+  getStoredToken,
+} from "@/lib/auth/tokenStore";
 import { getBillingBackendHttpsAgent } from "@/lib/api/nodeTlsAgent";
 import {
   BILLING_API_PROXY_BASE,
@@ -93,6 +97,16 @@ function mergeJsonBody(config: InternalAxiosRequestConfig): void {
 
 function applyRequestInterceptors(client: AxiosInstance): void {
   client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    if (typeof window !== "undefined" && clearSessionIfExpired()) {
+      if (
+        window.location.pathname !== appPaths.login &&
+        !redirectingToLogin
+      ) {
+        redirectingToLogin = true;
+        window.location.replace(appPaths.login);
+      }
+      return Promise.reject(new axios.Cancel("Session expired"));
+    }
     if (typeof window !== "undefined") {
       // Same-origin proxies: `BILLING_BACKEND_PROXY_BASE` vs `BILLING_API_PROXY_BASE` (legacy `/api/*`).
       // Axios merges baseURL + url — a path under `BILLING_API_PROXY_BASE` must NOT use `BILLING_BACKEND_PROXY_BASE`
@@ -244,6 +258,7 @@ let _client: AxiosInstance | null = null;
  * - `withCredentials: true`, `withXSRFToken: true`, cookie/header names — Sanctum CSRF (see `applyXsrfHeaderFromCookie`; call `fetchSanctumCsrfCookie` before login/logout)
  * - Server-side only: `API_TLS_INSECURE=1` uses `getBillingBackendHttpsAgent()` (same as proxy route handlers)
  * - Browser: **401** or **403** → clear token + `location.replace('/login')`, except failed **login** POST (`/login`).
+ * - Client: if `expires_in` from login is stored and elapsed, clear session + redirect to `/login` before sending.
  */
 export function getApiClient(): AxiosInstance {
   if (!_client) {

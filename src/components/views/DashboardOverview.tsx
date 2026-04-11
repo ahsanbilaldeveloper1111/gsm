@@ -1,213 +1,138 @@
 "use client";
 
 import { useMemo } from "react";
-import { useDisplayCurrency } from "@/contexts/currency-display-context";
-import { useAuth } from "@/contexts/auth-context";
-import { useCurrentUser } from "@/hooks/auth/useCurrentUser";
-import { useAnalyticsDashboardCounters } from "@/hooks/analytics/useAnalyticsDashboardCounters";
-import { useAnalyticsDashboardCharts } from "@/hooks/analytics/useAnalyticsDashboardCharts";
-import { useAnalyticsDashboardOverview } from "@/hooks/analytics/useAnalyticsDashboardOverview";
-import { useDashboard } from "@/hooks/dashboard/useDashboard";
-import { JsonPanel } from "@/components/dashboard/JsonPanel";
+import { DashboardChartsSection } from "@/components/dashboard/DashboardChartsSection";
+import { DashboardMoreAnalyticsSection } from "@/components/dashboard/DashboardMoreAnalyticsSection";
 import { MetricCard } from "@/components/dashboard/MetricCard";
+import type { CounterMetricEntry } from "@/lib/dashboard/analyticsCounters";
+import { dashboardCounterMetricEntries } from "@/lib/dashboard/dashboardCountersMetrics";
+import {
+  useAnalyticsByMonths,
+  useAnalyticsProductsSpentByCompany,
+  useAnalyticsProfitLoss,
+  useAnalyticsRecentActivity,
+} from "@/hooks/analytics/useAnalyticsEndpoints";
+import { useAnalyticsDashboardCharts } from "@/hooks/analytics/useAnalyticsDashboardCharts";
+import { useAnalyticsDashboardCounters } from "@/hooks/analytics/useAnalyticsDashboardCounters";
+import { unwrapApiSuccessData } from "@/lib/dashboard/unwrapAnalyticsPayload";
+import type { DashboardCounters } from "@/models/Analytics";
 
-/** Match nested counter keys that represent money (heuristic). */
-const MONEY_KEY = /amount|revenue|fee|price|balance|paid|tax|subtotal|outstanding|total|value|cost|net|gross|processing/i;
-
-function flattenNumericLeaves(
-  obj: unknown,
-  prefix = "",
-): { path: string; value: number }[] {
-  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return [];
-  const out: { path: string; value: number }[] = [];
-  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-    const path = prefix ? `${prefix} · ${k}` : k;
-    if (typeof v === "number" && Number.isFinite(v)) {
-      out.push({ path, value: v });
-    } else if (v && typeof v === "object" && !Array.isArray(v)) {
-      out.push(...flattenNumericLeaves(v, path));
-    }
+function formatMetricValue(row: CounterMetricEntry): string {
+  if (row.valueStyle === "currency") {
+    return row.value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   }
-  return out;
-}
-
-function extractCounterEntries(
-  payload: unknown,
-  formatMoney: (n: number) => string,
-): { label: string; value: string }[] {
-  if (!payload || typeof payload !== "object") return [];
-  const root = payload as Record<string, unknown>;
-  const data = root.data;
-  if (!data || typeof data !== "object") return [];
-  const leaves = flattenNumericLeaves(data);
-  return leaves.slice(0, 12).map(({ path, value }) => {
-    const isMoney = MONEY_KEY.test(path.toLowerCase());
-    return {
-      label: path.replace(/_/g, " "),
-      value: isMoney ? formatMoney(value) : value.toLocaleString(),
-    };
-  });
+  return Number(row.value).toLocaleString();
 }
 
 export function DashboardOverview() {
-  const { bootstrapError } = useAuth();
-  const { formatInCurrency, computedDefault } = useDisplayCurrency();
-  const userQuery = useCurrentUser();
-  const dashboardQuery = useDashboard();
-  const countersQuery = useAnalyticsDashboardCounters();
+  const dashboardCountersQuery = useAnalyticsDashboardCounters();
   const chartsQuery = useAnalyticsDashboardCharts();
-  const overviewQuery = useAnalyticsDashboardOverview();
+  const profitLossQuery = useAnalyticsProfitLoss(null);
+  const recentActivityQuery = useAnalyticsRecentActivity(null);
+  const productsSpentQuery = useAnalyticsProductsSpentByCompany(null);
+  const byMonthsQuery = useAnalyticsByMonths(null);
 
-  const metrics = useMemo(
-    () =>
-      extractCounterEntries(countersQuery.data, (n) =>
-        formatInCurrency(n, computedDefault),
-      ),
-    [countersQuery.data, formatInCurrency, computedDefault],
-  );
+  const counterRows = useMemo(() => {
+    const raw = unwrapApiSuccessData<DashboardCounters>(
+      dashboardCountersQuery.data,
+    );
+    return dashboardCounterMetricEntries(raw);
+  }, [dashboardCountersQuery.data]);
 
-  const dashboardPanelData = useMemo(() => {
-    if (dashboardQuery.isError) {
-      return { error: String(dashboardQuery.error) };
-    }
-    return dashboardQuery.data;
-  }, [
-    dashboardQuery.isError,
-    dashboardQuery.error,
-    dashboardQuery.data,
-  ]);
+  const moreAnalyticsLoading =
+    profitLossQuery.isLoading ||
+    recentActivityQuery.isLoading ||
+    productsSpentQuery.isLoading ||
+    byMonthsQuery.isLoading;
 
-  const userPanelData = useMemo(() => {
-    if (userQuery.isError) {
-      return { error: String(userQuery.error) };
-    }
-    return userQuery.data;
-  }, [userQuery.isError, userQuery.error, userQuery.data]);
+  const chartsError =
+    chartsQuery.error instanceof Error
+      ? chartsQuery.error
+      : new Error(
+          chartsQuery.error != null ? String(chartsQuery.error) : "Error",
+        );
 
-  const countersPanelData = useMemo(() => {
-    if (countersQuery.isError) {
-      return { error: String(countersQuery.error) };
-    }
-    return countersQuery.data;
-  }, [countersQuery.isError, countersQuery.error, countersQuery.data]);
-
-  const chartsPanelData = useMemo(() => {
-    if (chartsQuery.isError) {
-      return { error: String(chartsQuery.error) };
-    }
-    return chartsQuery.data;
-  }, [chartsQuery.isError, chartsQuery.error, chartsQuery.data]);
-
-  const overviewPanelData = useMemo(() => {
-    if (overviewQuery.isError) {
-      return { error: String(overviewQuery.error) };
-    }
-    return overviewQuery.data;
-  }, [overviewQuery.isError, overviewQuery.error, overviewQuery.data]);
+  const skeletonCount = 16;
 
   return (
     <>
-      {bootstrapError ? (
-        <div
-          className="mb-10 rounded-2xl border border-rose-200/90 bg-gradient-to-br from-rose-50 to-white p-5 text-sm text-rose-900 shadow-sm dark:border-rose-900/50 dark:from-rose-950/50 dark:to-zinc-950 dark:text-rose-100"
-          role="alert"
-        >
-          <p className="font-semibold">Could not load API token</p>
-          <p className="mt-1 opacity-90">{bootstrapError.message}</p>
-          <p className="mt-3 text-xs opacity-80">
-            Set{" "}
-            <code className="rounded bg-black/5 px-1 dark:bg-white/10">
-              API_APP_SECRET
-            </code>{" "}
-            for POST{" "}
-            <code className="rounded bg-black/5 px-1 dark:bg-white/10">
-              /get-token
-            </code>{" "}
-            or sign in — see your billing backend env.
+      <section>
+        <div className="mb-6">
+          <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            Counters
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Key totals from the dashboard counters endpoint (companies, invoices,
+            expenses, inventory, and more).
           </p>
         </div>
-      ) : null}
-
-      <section>
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-              Highlights
-            </h2>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              Analytics counters — money-like fields use your header currency.
-            </p>
-          </div>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {countersQuery.isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {dashboardCountersQuery.isLoading ? (
             <>
-              {[1, 2, 3].map((i) => (
+              {Array.from({ length: skeletonCount }, (_, i) => (
                 <div
                   key={i}
                   className="h-32 animate-pulse rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900"
                 />
               ))}
             </>
-          ) : metrics.length > 0 ? (
-            metrics.map((m) => (
-              <MetricCard key={m.label} label={m.label} value={m.value} />
+          ) : dashboardCountersQuery.isError ? (
+            <p className="text-sm text-rose-600 dark:text-rose-400">
+              Counters could not load.
+            </p>
+          ) : counterRows.length > 0 ? (
+            counterRows.map((row) => (
+              <MetricCard
+                key={row.key}
+                label={row.label}
+                value={formatMetricValue(row)}
+              />
             ))
           ) : (
-            <p className="text-sm text-zinc-500">
-              No counter fields returned — expand panels below for raw payloads.
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              No counter data returned.
             </p>
           )}
         </div>
       </section>
 
-      <section className="mt-14 space-y-6">
-        <div>
-          <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            API responses
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Raw JSON for debugging and integration checks.
-          </p>
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <JsonPanel
-            title="GET /dashboard"
-            subtitle={
-              dashboardQuery.isFetching
-                ? "Loading…"
-                : dashboardQuery.isError
-                  ? "Error"
-                  : "OK"
-            }
-            data={dashboardPanelData}
-            defaultOpen
-          />
-          <JsonPanel
-            title="GET /user"
-            subtitle={
-              userQuery.isFetching
-                ? "Loading…"
-                : userQuery.isError
-                  ? "Error"
-                  : "OK"
-            }
-            data={userPanelData}
-          />
-          <JsonPanel
-            title="GET /analytics/dashboard-counters"
-            data={countersPanelData}
-          />
-          <JsonPanel
-            title="GET /analytics/dashboard-charts"
-            data={chartsPanelData}
-          />
-          <JsonPanel
-            title="GET /analytics/dashboard-overview"
-            data={overviewPanelData}
-          />
-        </div>
-      </section>
+      <DashboardChartsSection
+        payload={chartsQuery.data}
+        isLoading={chartsQuery.isLoading}
+        isError={chartsQuery.isError}
+        error={chartsQuery.isError ? chartsError : null}
+      />
+
+      {moreAnalyticsLoading ? (
+        <section className="mt-10">
+          <div className="mb-6">
+            <h3 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+              Profit, activity & comparisons
+            </h3>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              Loading additional analytics…
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="h-52 animate-pulse rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900"
+              />
+            ))}
+          </div>
+        </section>
+      ) : (
+        <DashboardMoreAnalyticsSection
+          profitLossPayload={profitLossQuery.data}
+          recentActivityPayload={recentActivityQuery.data}
+          productsSpentPayload={productsSpentQuery.data}
+          byMonthsPayload={byMonthsQuery.data}
+        />
+      )}
     </>
   );
 }
