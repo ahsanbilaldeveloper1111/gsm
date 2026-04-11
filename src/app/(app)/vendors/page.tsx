@@ -1,4 +1,4 @@
-import { VendorsView } from "@/components/views/ListViews";
+import { VendorCrudView } from "@/components/views/VendorCrudView";
 import { PageFrame } from "@/components/layout/PageFrame";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -12,7 +12,7 @@ export default function VendorsPage() {
         description="Suppliers and vendor records linked to billing."
       />
       <div className="mt-8">
-        <VendorsView />
+        <VendorCrudView />
       </div>
     </PageFrame>
   );

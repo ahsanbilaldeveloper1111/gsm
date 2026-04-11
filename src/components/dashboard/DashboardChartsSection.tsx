@@ -27,8 +27,8 @@ function ChartCard({
   empty?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200/70 bg-white/90 p-5 shadow-sm ring-1 ring-black/[0.03] dark:border-zinc-800/80 dark:bg-zinc-950/80 dark:ring-white/[0.04]">
-      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+    <div className="rounded-2xl border border-zinc-200/60 bg-gradient-to-br from-white to-zinc-50/90 p-5 shadow-[0_1px_0_rgba(255,255,255,0.85)_inset,0_4px_20px_-8px_rgba(15,23,42,0.06)] ring-1 ring-zinc-900/[0.03] dark:border-zinc-800/70 dark:from-zinc-950 dark:to-zinc-950/85 dark:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset,0_6px_24px_-8px_rgba(0,0,0,0.35)] dark:ring-white/[0.04]">
+      <h3 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
         {title}
       </h3>
       <div className="mt-4">
@@ -257,12 +257,18 @@ export function DashboardChartsSection({
   if (isError) {
     return (
       <section id="analytics" className="mt-14 scroll-mt-24">
-        <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Analytics
-        </h2>
-        <p className="mt-2 rounded-xl border border-rose-200/80 bg-rose-50/90 px-4 py-3 text-sm text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-100">
-          Analytics could not load. {error?.message ?? "Unknown error"}
-        </p>
+        <div className="rounded-2xl border border-zinc-200/50 bg-white/45 p-6 backdrop-blur-[2px] dark:border-zinc-800/50 dark:bg-zinc-950/40 sm:rounded-3xl sm:p-8">
+          <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 shadow-sm shadow-emerald-500/40"
+              aria-hidden
+            />
+            Analytics
+          </h2>
+          <p className="mt-4 rounded-xl border border-rose-200/80 bg-rose-50/90 px-4 py-3 text-sm text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-100">
+            Analytics could not load. {error?.message ?? "Unknown error"}
+          </p>
+        </div>
       </section>
     );
   }
@@ -270,16 +276,22 @@ export function DashboardChartsSection({
   if (isLoading) {
     return (
       <section id="analytics" className="mt-14 scroll-mt-24">
-        <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Analytics
-        </h2>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="h-48 animate-pulse rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900"
+        <div className="rounded-2xl border border-zinc-200/50 bg-white/45 p-6 backdrop-blur-[2px] dark:border-zinc-800/50 dark:bg-zinc-950/40 sm:rounded-3xl sm:p-8">
+          <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 shadow-sm shadow-emerald-500/40"
+              aria-hidden
             />
-          ))}
+            Analytics
+          </h2>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="h-48 animate-pulse rounded-2xl bg-gradient-to-br from-zinc-100/90 via-white to-emerald-50/25 dark:from-zinc-800 dark:via-zinc-900 dark:to-emerald-950/20"
+              />
+            ))}
+          </div>
         </div>
       </section>
     );
@@ -288,12 +300,18 @@ export function DashboardChartsSection({
   if (!data) {
     return (
       <section id="analytics" className="mt-14 scroll-mt-24">
-        <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Analytics
-        </h2>
-        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-          No chart data is available yet.
-        </p>
+        <div className="rounded-2xl border border-zinc-200/50 bg-white/45 p-6 backdrop-blur-[2px] dark:border-zinc-800/50 dark:bg-zinc-950/40 sm:rounded-3xl sm:p-8">
+          <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 shadow-sm shadow-emerald-500/40"
+              aria-hidden
+            />
+            Analytics
+          </h2>
+          <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
+            No chart data is available yet.
+          </p>
+        </div>
       </section>
     );
   }
@@ -307,54 +325,61 @@ export function DashboardChartsSection({
 
   return (
     <section id="analytics" className="mt-14 scroll-mt-24">
-      <div className="mb-6">
-        <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Analytics
-        </h2>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Revenue and expense trends, inventory, expenses by category, and top products.
-        </p>
-      </div>
+      <div className="rounded-2xl border border-zinc-200/50 bg-white/45 p-6 shadow-[0_4px_32px_-12px_rgba(15,23,42,0.07)] backdrop-blur-[2px] dark:border-zinc-800/50 dark:bg-zinc-950/40 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)] sm:rounded-3xl sm:p-8">
+        <div className="mb-8">
+          <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 shadow-sm shadow-emerald-500/40"
+              aria-hidden
+            />
+            Analytics
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+            Revenue and expense trends, inventory, expenses by category, and top
+            products.
+          </p>
+        </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <TrendBlock
-          title="Revenue trend"
-          items={revenue}
-          valueKey="revenue"
-          strokeClass="text-emerald-500"
-          formatY={fmtMoney}
-        />
-        <TrendBlock
-          title="Expense trend"
-          items={expense}
-          valueKey="expenses"
-          strokeClass="text-amber-500"
-          formatY={fmtMoney}
-        />
-        {inv ? <InventoryStatusCard d={inv} /> : null}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <TrendBlock
+            title="Revenue trend"
+            items={revenue}
+            valueKey="revenue"
+            strokeClass="text-emerald-500"
+            formatY={fmtMoney}
+          />
+          <TrendBlock
+            title="Expense trend"
+            items={expense}
+            valueKey="expenses"
+            strokeClass="text-amber-500"
+            formatY={fmtMoney}
+          />
+          {inv ? <InventoryStatusCard d={inv} /> : null}
 
-        <HorizontalBars
-          title="Expense breakdown"
-          rows={expenseBreak as unknown as Record<string, unknown>[]}
-          labelKey="category_name"
-          valueKey="total_amount"
-          formatValue={fmtMoney}
-        />
-        <HorizontalBars
-          title="Inventory value by category"
-          rows={invVal as unknown as Record<string, unknown>[]}
-          labelKey="category_name"
-          valueKey="total_value"
-          formatValue={fmtMoney}
-        />
-        <HorizontalBars
-          title="Top products (revenue)"
-          rows={top as unknown as Record<string, unknown>[]}
-          labelKey="name"
-          valueKey="total_revenue"
-          formatValue={fmtMoney}
-          maxRows={10}
-        />
+          <HorizontalBars
+            title="Expense breakdown"
+            rows={expenseBreak as unknown as Record<string, unknown>[]}
+            labelKey="category_name"
+            valueKey="total_amount"
+            formatValue={fmtMoney}
+          />
+          <HorizontalBars
+            title="Inventory value by category"
+            rows={invVal as unknown as Record<string, unknown>[]}
+            labelKey="category_name"
+            valueKey="total_value"
+            formatValue={fmtMoney}
+          />
+          <HorizontalBars
+            title="Top products (revenue)"
+            rows={top as unknown as Record<string, unknown>[]}
+            labelKey="name"
+            valueKey="total_revenue"
+            formatValue={fmtMoney}
+            maxRows={10}
+          />
+        </div>
       </div>
     </section>
   );

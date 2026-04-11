@@ -6,7 +6,7 @@ import { getXsrfHeadersForFetch } from "@/lib/auth/xsrfBrowser";
 import { apiRoutes } from "@/lib/routes/apiRoutes";
 import {
   clearStoredToken,
-  parseExpiresInSeconds,
+  loginExpiresInMinutesToStorageSeconds,
   setStoredToken,
 } from "@/lib/auth/tokenStore";
 import {
@@ -25,6 +25,7 @@ export type LoginPayload = {
 export type LoginResult = {
   access_token?: string;
   token?: string;
+  /** Minutes until token expiry (billing backend); client converts for storage. */
   expires_in?: number | string;
   user?: unknown;
   message?: string;
@@ -36,6 +37,7 @@ type LoginDataPayload = {
   access_token?: string;
   token?: string;
   user?: unknown;
+  /** Minutes until token expiry. */
   expires_in?: number;
   requires_google_auth_verification?: boolean;
 };
@@ -49,14 +51,17 @@ function normalizeBearerValue(jwt: string): string {
  * Reads `access_token` / `token` from Sanctum envelope or flat JSON.
  * Tolerant of `success: 1` / `"true"` so we never skip persisting the JWT.
  */
+/** Returns seconds until expiry for `setStoredToken` (API sends minutes). */
 function extractExpiresInFromLoginJson(raw: unknown): number | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   if (r.data && typeof r.data === "object" && !Array.isArray(r.data)) {
     const d = r.data as Record<string, unknown>;
-    if ("expires_in" in d) return parseExpiresInSeconds(d.expires_in);
+    if ("expires_in" in d)
+      return loginExpiresInMinutesToStorageSeconds(d.expires_in);
   }
-  if ("expires_in" in r) return parseExpiresInSeconds(r.expires_in);
+  if ("expires_in" in r)
+    return loginExpiresInMinutesToStorageSeconds(r.expires_in);
   return null;
 }
 
@@ -345,7 +350,10 @@ function maybeStoreTokenFromEnvelope(data: unknown): void {
     ).data;
     const jwt = inner?.access_token ?? inner?.token;
     if (jwt) {
-      setStoredToken(jwt, { expiresInSeconds: inner?.expires_in });
+      setStoredToken(jwt, {
+        expiresInSeconds:
+          loginExpiresInMinutesToStorageSeconds(inner?.expires_in) ?? undefined,
+      });
     }
   }
 }

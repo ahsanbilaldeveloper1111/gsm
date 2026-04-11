@@ -1,4 +1,4 @@
-import { UsersView } from "@/components/views/ListViews";
+import { UserListView } from "@/components/views/UserListView";
 import { PageFrame } from "@/components/layout/PageFrame";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -12,7 +12,7 @@ export default function UsersPage() {
         description="Directory users, roles, and account settings via `/api/users`."
       />
       <div className="mt-8">
-        <UsersView />
+        <UserListView />
       </div>
     </PageFrame>
   );

@@ -9,9 +9,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex min-h-0 flex-1 overflow-hidden">
-      {/* Ambient accents */}
+      {/* Ambient mesh — depth behind content */}
       <div
-        className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.06),transparent)] dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(52,211,153,0.07),transparent)]"
+        className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_85%_55%_at_50%_-18%,rgba(16,185,129,0.07),transparent_52%),radial-gradient(ellipse_50%_40%_at_100%_0%,rgba(59,130,246,0.04),transparent_45%)] dark:bg-[radial-gradient(ellipse_85%_55%_at_50%_-18%,rgba(52,211,153,0.09),transparent_52%),radial-gradient(ellipse_45%_35%_at_100%_0%,rgba(56,189,248,0.06),transparent_45%)]"
         aria-hidden
       />
 

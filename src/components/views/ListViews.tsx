@@ -13,7 +13,6 @@ import { useInvoices } from "@/hooks/invoices/useInvoices";
 import { usePayments } from "@/hooks/payments/usePayments";
 import { useProductCategories } from "@/hooks/product-categories/useProductCategories";
 import { useProducts } from "@/hooks/products/useProducts";
-import { useRanks } from "@/hooks/ranks/useRanks";
 import { useReportsDashboard } from "@/hooks/reports/useReportsDashboard";
 import { useStripePublishableKey } from "@/hooks/stripe/useStripePublishableKey";
 import { useUsers } from "@/hooks/users/useUsers";
@@ -79,19 +78,30 @@ export function VendorsView() {
   return <ModelListBody query={q} title="Vendors" />;
 }
 
-export function RanksView() {
-  const q = useRanks();
-  return <ModelListBody query={q} title="Ranks" />;
-}
-
 export function CrmView() {
   const q = useCrmCompanies();
-  return <ModelListBody query={q} title="CRM companies" />;
+  return (
+    <ModelListBody
+      query={q}
+      title="CRM companies"
+      viewable
+      detailModalTitle="CRM company"
+      detailModalSubtitle="CRM company row from the list response (read-only proxy)."
+    />
+  );
 }
 
 export function AuditLogsView() {
   const q = useAuditLogs();
-  return <ModelListBody query={q} title="Audit logs" />;
+  return (
+    <ModelListBody
+      query={q}
+      title="Audit logs"
+      viewable
+      detailModalTitle="Audit log"
+      detailModalSubtitle="Full row from the audit log list (immutable activity record)."
+    />
+  );
 }
 
 export function InventoryView() {

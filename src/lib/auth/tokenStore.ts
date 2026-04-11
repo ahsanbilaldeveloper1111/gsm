@@ -1,8 +1,52 @@
 const STORAGE_KEY = "billing.jwt";
 const EXPIRES_AT_KEY = "billing.jwt.expiresAt";
 
+/** Same-tab localStorage updates (login/logout) — `storage` event only fires for *other* tabs. */
+const TOKEN_CHANGED_EVENT = "billing:jwt-changed";
+
 let memoryToken: string | null = null;
 
+function emitTokenChanged(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(TOKEN_CHANGED_EVENT));
+}
+
+/**
+ * Pure read for React `useSyncExternalStore` — does **not** mutate storage
+ * (unlike {@link getStoredToken}, which may clear an expired session).
+ */
+export function getStoredTokenSnapshot(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const t = window.localStorage.getItem(STORAGE_KEY);
+    if (!t) return null;
+    if (isStoredSessionExpired()) return null;
+    return t;
+  } catch {
+    return null;
+  }
+}
+
+/** Subscribe to JWT changes (login, logout, expiry cleanup, other-tab storage). */
+export function subscribeStoredToken(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY || e.key === EXPIRES_AT_KEY) onStoreChange();
+  };
+  const onCustom = () => onStoreChange();
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(TOKEN_CHANGED_EVENT, onCustom);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(TOKEN_CHANGED_EVENT, onCustom);
+  };
+}
+
+/**
+ * Parses a positive numeric expiry fragment from the API (used for minutes or seconds, depending on caller).
+ */
 export function parseExpiresInSeconds(v: unknown): number | null {
   if (v == null) return null;
   if (typeof v === "number" && Number.isFinite(v) && v > 0) return v;
@@ -11,6 +55,15 @@ export function parseExpiresInSeconds(v: unknown): number | null {
     if (Number.isFinite(n) && n > 0) return n;
   }
   return null;
+}
+
+/**
+ * Billing login responses use `expires_in` in **minutes**; storage uses seconds until expiry.
+ */
+export function loginExpiresInMinutesToStorageSeconds(v: unknown): number | null {
+  const minutes = parseExpiresInSeconds(v);
+  if (minutes == null) return null;
+  return minutes * 60;
 }
 
 function readExpiresAtMsFromStorage(): number | null {
@@ -50,6 +103,7 @@ export function getStoredToken(): string | null {
 
 export function setStoredToken(
   token: string | null,
+  /** Seconds until JWT expiry (already converted from API `expires_in` when that value is in minutes). */
   options?: { expiresInSeconds?: unknown },
 ): void {
   memoryToken = token;
@@ -73,6 +127,7 @@ export function setStoredToken(
   } catch {
     /* ignore quota / private mode */
   }
+  emitTokenChanged();
 }
 
 export function clearStoredToken(): void {
@@ -84,6 +139,7 @@ export function clearStoredToken(): void {
   } catch {
     /* ignore */
   }
+  emitTokenChanged();
 }
 
 /** Clears stored JWT when `expires_in` has passed. Returns whether the session was expired. */

@@ -20,163 +20,249 @@ function money(
   return { key, label, value: toFiniteNumber(raw), valueStyle: "currency" };
 }
 
-function add(out: CounterMetricEntry[], e: CounterMetricEntry | null) {
-  if (e) out.push(e);
+function nonNull<T>(x: T | null): x is T {
+  return x != null;
 }
 
-/**
- * Flattens `GET /analytics/dashboard-counters` (`DashboardCounters`) into
- * metric cards with readable labels.
- */
-export function dashboardCounterMetricEntries(
-  data: DashboardCounters | null,
-): CounterMetricEntry[] {
-  if (data == null) return [];
-  const out: CounterMetricEntry[] = [];
+/** Single metric card vs one box with circular nested metrics. */
+export type DashboardCounterBlock =
+  | { kind: "single"; entry: CounterMetricEntry }
+  | { kind: "circles"; id: string; title: string; items: CounterMetricEntry[] };
 
-  const co = data.companies;
-  if (co) {
-    add(out, int("companies.total", "Companies", co.total));
-    add(out, int("companies.active", "Companies (active)", co.active));
-    add(out, int("companies.inactive", "Companies (inactive)", co.inactive));
-  }
+/**
+ * Ordered dashboard counter blocks: **single** metrics first, then **nested**
+ * groups (shown as one card with circular badges per sub-metric).
+ */
+export function buildDashboardCounterBlocks(
+  data: DashboardCounters | null,
+): DashboardCounterBlock[] {
+  if (data == null) return [];
+  const blocks: DashboardCounterBlock[] = [];
 
   const cu = data.customers;
   if (cu) {
-    add(out, int("customers.total", "Customers", cu.total));
+    const e = int("customers.total", "Customers", cu.total);
+    if (e) blocks.push({ kind: "single", entry: e });
   }
 
   const pr = data.products;
   if (pr) {
-    add(out, int("products.total", "Products", pr.total));
+    const e = int("products.total", "Products", pr.total);
+    if (e) blocks.push({ kind: "single", entry: e });
+  }
+
+  const co = data.companies;
+  if (co) {
+    const items = [
+      int("companies.total", "Total", co.total),
+      int("companies.active", "Active", co.active),
+      int("companies.inactive", "Inactive", co.inactive),
+    ].filter(nonNull);
+    if (items.length > 1) {
+      blocks.push({
+        kind: "circles",
+        id: "companies",
+        title: "Companies",
+        items,
+      });
+    } else if (items.length === 1) {
+      blocks.push({ kind: "single", entry: items[0]! });
+    }
   }
 
   const re = data.resellers;
   if (re) {
-    add(out, int("resellers.total", "Resellers", re.total));
-    add(out, int("resellers.active", "Resellers (active)", re.active));
-    add(out, int("resellers.inactive", "Resellers (inactive)", re.inactive));
+    const items = [
+      int("resellers.total", "Total", re.total),
+      int("resellers.active", "Active", re.active),
+      int("resellers.inactive", "Inactive", re.inactive),
+    ].filter(nonNull);
+    if (items.length > 1) {
+      blocks.push({
+        kind: "circles",
+        id: "resellers",
+        title: "Resellers",
+        items,
+      });
+    } else if (items.length === 1) {
+      blocks.push({ kind: "single", entry: items[0]! });
+    }
+  }
+
+  const cat = data.categories;
+  if (cat) {
+    const items = [
+      int("categories.product_categories", "Product", cat.product_categories),
+      int("categories.expense_categories", "Expense", cat.expense_categories),
+      int("categories.total_categories", "Total", cat.total_categories),
+    ].filter(nonNull);
+    if (items.length > 1) {
+      blocks.push({
+        kind: "circles",
+        id: "categories",
+        title: "Categories",
+        items,
+      });
+    } else if (items.length === 1) {
+      blocks.push({ kind: "single", entry: items[0]! });
+    }
+  }
+
+  const ex = data.expenses;
+  if (ex) {
+    const items = [
+      int("expenses.total", "Count", ex.total),
+      money("expenses.total_amount", "Amount", ex.total_amount),
+      int("expenses.this_month", "This month", ex.this_month),
+      int("expenses.last_month", "Last month", ex.last_month),
+    ].filter(nonNull);
+    if (items.length > 1) {
+      blocks.push({
+        kind: "circles",
+        id: "expenses",
+        title: "Expenses",
+        items,
+      });
+    } else if (items.length === 1) {
+      blocks.push({ kind: "single", entry: items[0]! });
+    }
+  }
+
+  const iv = data.inventory;
+  if (iv) {
+    const items = [
+      int("inventory.total_items", "Items", iv.total_items),
+      int("inventory.in_stock", "In stock", iv.in_stock),
+      int("inventory.low_stock", "Low", iv.low_stock),
+      int("inventory.out_of_stock", "Out", iv.out_of_stock),
+      int("inventory.categories", "Categories", iv.categories),
+      money("inventory.total_value", "Value", iv.total_value),
+    ].filter(nonNull);
+    if (items.length > 1) {
+      blocks.push({
+        kind: "circles",
+        id: "inventory",
+        title: "Inventory",
+        items,
+      });
+    } else if (items.length === 1) {
+      blocks.push({ kind: "single", entry: items[0]! });
+    }
   }
 
   const inv = data.invoices;
   if (inv) {
-    add(out, int("invoices.total", "Invoices", inv.total));
-    add(out, int("invoices.draft", "Invoices (draft)", inv.draft));
-    add(out, int("invoices.sent", "Invoices (sent)", inv.sent));
-    add(out, int("invoices.paid", "Invoices (paid)", inv.paid));
-    add(out, int("invoices.overdue", "Invoices (overdue)", inv.overdue));
-    add(out, int("invoices.cancelled", "Invoices (cancelled)", inv.cancelled));
-    add(out, money("invoices.total_amount", "Invoice total amount", inv.total_amount));
-    add(
-      out,
+    const pipeline = [
+      int("invoices.total", "Total", inv.total),
+      int("invoices.draft", "Draft", inv.draft),
+      int("invoices.sent", "Sent", inv.sent),
+      int("invoices.paid", "Paid", inv.paid),
+      int("invoices.overdue", "Overdue", inv.overdue),
+      int("invoices.cancelled", "Cancelled", inv.cancelled),
+    ].filter(nonNull);
+    if (pipeline.length > 1) {
+      blocks.push({
+        kind: "circles",
+        id: "invoices-pipeline",
+        title: "Invoices — status",
+        items: pipeline,
+      });
+    }
+
+    const amounts = [
+      money("invoices.total_amount", "Total", inv.total_amount),
+      money("invoices.paid_amount", "Paid", inv.paid_amount),
+      money("invoices.outstanding_amount", "Outstanding", inv.outstanding_amount),
+      money("invoices.overdue_amount", "Overdue", inv.overdue_amount),
+      money(
+        "invoices.partially_paid_amount",
+        "Partially paid",
+        inv.partially_paid_amount,
+      ),
+      money(
+        "invoices.prev_month_total_amount",
+        "Prior month",
+        inv.prev_month_total_amount,
+      ),
+    ].filter(nonNull);
+    if (amounts.length > 1) {
+      blocks.push({
+        kind: "circles",
+        id: "invoices-amounts",
+        title: "Invoices — amounts",
+        items: amounts,
+      });
+    }
+
+    const singles: CounterMetricEntry[] = [];
+    const pushSingle = (e: CounterMetricEntry | null) => {
+      if (e) singles.push(e);
+    };
+    pushSingle(
       money(
         "invoices.total_amount_with_fees",
         "Invoice total (with fees)",
         inv.total_amount_with_fees,
       ),
     );
-    add(out, money("invoices.total_subtotal", "Invoice subtotal", inv.total_subtotal));
-    add(out, money("invoices.total_tax_amount", "Invoice tax total", inv.total_tax_amount));
-    add(
-      out,
+    pushSingle(money("invoices.total_subtotal", "Invoice subtotal", inv.total_subtotal));
+    pushSingle(money("invoices.total_tax_amount", "Invoice tax total", inv.total_tax_amount));
+    pushSingle(
       money(
         "invoices.total_processing_fee",
-        "Invoice processing fees",
+        "Processing fee",
         inv.total_processing_fee,
       ),
     );
-    add(
-      out,
+    pushSingle(
       money(
         "invoices.total_tax_paid_invoices",
         "Tax (paid invoices)",
         inv.total_tax_paid_invoices,
       ),
     );
-    add(
-      out,
+    pushSingle(
       money(
         "invoices.total_subtotal_paid_invoices",
-        "Subtotal (paid invoices)",
+        "Subtotal (paid)",
         inv.total_subtotal_paid_invoices,
       ),
     );
-    add(
-      out,
-      money(
-        "invoices.prev_month_total_amount",
-        "Invoices (prior month amount)",
-        inv.prev_month_total_amount,
-      ),
+    pushSingle(
+      int("invoices.overdue_invoices_count", "Overdue count", inv.overdue_invoices_count),
     );
-    add(out, money("invoices.paid_amount", "Paid amount", inv.paid_amount));
-    add(
-      out,
-      money(
-        "invoices.partially_paid_amount",
-        "Partially paid amount",
-        inv.partially_paid_amount,
-      ),
+    pushSingle(
+      money("invoices.total_processing_fees", "Processing fees", inv.total_processing_fees),
     );
-    add(
-      out,
-      money("invoices.outstanding_amount", "Outstanding amount", inv.outstanding_amount),
-    );
-    add(out, money("invoices.overdue_amount", "Overdue amount", inv.overdue_amount));
-    add(
-      out,
-      int("invoices.overdue_invoices_count", "Overdue invoices", inv.overdue_invoices_count),
-    );
-    add(
-      out,
-      money("invoices.total_processing_fees", "Total processing fees", inv.total_processing_fees),
-    );
-    add(out, int("invoices.paid_invoices_count", "Paid invoice count", inv.paid_invoices_count));
-    add(
-      out,
+    pushSingle(int("invoices.paid_invoices_count", "Paid count", inv.paid_invoices_count));
+    pushSingle(
       int(
         "invoices.partially_paid_invoices_count",
-        "Partially paid invoice count",
+        "Partially paid count",
         inv.partially_paid_invoices_count,
       ),
     );
-    add(out, int("invoices.unpaid_invoices_count", "Unpaid invoice count", inv.unpaid_invoices_count));
+    pushSingle(int("invoices.unpaid_invoices_count", "Unpaid count", inv.unpaid_invoices_count));
+
+    for (const entry of singles) {
+      blocks.push({ kind: "single", entry });
+    }
   }
 
-  const ex = data.expenses;
-  if (ex) {
-    add(out, int("expenses.total", "Expenses (count)", ex.total));
-    add(out, money("expenses.total_amount", "Expenses (amount)", ex.total_amount));
-    add(out, int("expenses.this_month", "Expenses (this month)", ex.this_month));
-    add(out, int("expenses.last_month", "Expenses (last month)", ex.last_month));
-  }
+  return blocks;
+}
 
-  const iv = data.inventory;
-  if (iv) {
-    add(out, int("inventory.total_items", "Inventory items", iv.total_items));
-    add(out, int("inventory.in_stock", "In stock", iv.in_stock));
-    add(out, int("inventory.low_stock", "Low stock", iv.low_stock));
-    add(out, int("inventory.out_of_stock", "Out of stock", iv.out_of_stock));
-    add(out, money("inventory.total_value", "Inventory value", iv.total_value));
-    add(out, int("inventory.categories", "Inventory categories", iv.categories));
+/**
+ * @deprecated Prefer {@link buildDashboardCounterBlocks} for dashboard UI.
+ */
+export function dashboardCounterMetricEntries(
+  data: DashboardCounters | null,
+): CounterMetricEntry[] {
+  const blocks = buildDashboardCounterBlocks(data);
+  const out: CounterMetricEntry[] = [];
+  for (const b of blocks) {
+    if (b.kind === "single") out.push(b.entry);
+    else out.push(...b.items);
   }
-
-  const cat = data.categories;
-  if (cat) {
-    add(
-      out,
-      int("categories.product_categories", "Product categories", cat.product_categories),
-    );
-    add(
-      out,
-      int(
-        "categories.expense_categories",
-        "Expense categories",
-        cat.expense_categories,
-      ),
-    );
-    add(out, int("categories.total_categories", "Total categories", cat.total_categories));
-  }
-
   return out;
 }

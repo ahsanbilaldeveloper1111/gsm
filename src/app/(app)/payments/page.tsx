@@ -1,4 +1,4 @@
-import { PaymentsView } from "@/components/views/ListViews";
+import { PaymentListView } from "@/components/views/PaymentListView";
 import { PageFrame } from "@/components/layout/PageFrame";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -12,7 +12,7 @@ export default function PaymentsPage() {
         description="Recorded payments, refunds, and payment status."
       />
       <div className="mt-8">
-        <PaymentsView />
+        <PaymentListView />
       </div>
     </PageFrame>
   );

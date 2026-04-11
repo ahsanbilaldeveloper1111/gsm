@@ -1,4 +1,4 @@
-import { CompanyView } from "@/components/views/ListViews";
+import { CompanyCrudView } from "@/components/views/CompanyCrudView";
 import { PageFrame } from "@/components/layout/PageFrame";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -12,7 +12,7 @@ export default function CompanyPage() {
         description="Tenants, pricing, documents, and company profiles."
       />
       <div className="mt-8">
-        <CompanyView />
+        <CompanyCrudView />
       </div>
     </PageFrame>
   );

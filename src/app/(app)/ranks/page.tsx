@@ -1,4 +1,4 @@
-import { RanksView } from "@/components/views/ListViews";
+import { RankCrudView } from "@/components/views/RankCrudView";
 import { PageFrame } from "@/components/layout/PageFrame";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -12,7 +12,7 @@ export default function RanksPage() {
         description="Permission ranks and module access templates."
       />
       <div className="mt-8">
-        <RanksView />
+        <RankCrudView />
       </div>
     </PageFrame>
   );

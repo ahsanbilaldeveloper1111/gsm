@@ -7,10 +7,14 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 import { useAuthSessionMutations } from "@/hooks/auth/useAuthSessionMutations";
-import { getStoredToken } from "@/lib/auth/tokenStore";
+import {
+  clearSessionIfExpired,
+  getStoredTokenSnapshot,
+  subscribeStoredToken,
+} from "@/lib/auth/tokenStore";
 import type { LoginPayload, LoginResult } from "@/services/auth.service";
 
 type AuthContextValue = {
@@ -24,10 +28,14 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
+  const token = useSyncExternalStore(
+    subscribeStoredToken,
+    getStoredTokenSnapshot,
+    () => null,
+  );
 
   const { loginMutation, login: loginInner, logout } =
-    useAuthSessionMutations(setToken);
+    useAuthSessionMutations();
 
   const login = useCallback(
     async (payload: LoginPayload) => {
@@ -36,8 +44,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [loginInner],
   );
 
+  /** Clear expired JWT from storage on load so snapshot and axios agree. */
   useEffect(() => {
-    setToken(getStoredToken());
+    clearSessionIfExpired();
   }, []);
 
   const value = useMemo(

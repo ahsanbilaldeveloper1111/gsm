@@ -1,33 +1,32 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useCallback } from "react";
-import { getStoredToken } from "@/lib/auth/tokenStore";
 import { queryKeys } from "@/lib/queryKeys";
+import { appPaths } from "@/lib/navigation/appPaths";
 import type { LoginPayload } from "@/services/auth.service";
 import { loginRequest, logoutRequest } from "@/services/auth.service";
 
-type SetToken = (token: string | null) => void;
-
 /**
  * Login and logout via React Query mutations (services stay here, not in context).
- * JWT comes only from login / 2FA flows — `expires_in` is stored for client-side session checks.
+ * JWT persistence + `useSyncExternalStore` live in {@link tokenStore} / `AuthProvider`.
  */
-export function useAuthSessionMutations(setToken: SetToken) {
+export function useAuthSessionMutations() {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const loginMutation = useMutation({
     mutationFn: (payload: LoginPayload) => loginRequest(payload),
     onSuccess: async () => {
-      setToken(getStoredToken());
       await queryClient.invalidateQueries({ queryKey: queryKeys.user.me() });
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: logoutRequest,
-    onSettled: () => {
-      setToken(null);
+    onSettled: async () => {
+      await queryClient.invalidateQueries();
     },
   });
 
@@ -36,10 +35,15 @@ export function useAuthSessionMutations(setToken: SetToken) {
     [loginMutation],
   );
 
-  const logout = useCallback(
-    () => logoutMutation.mutateAsync(),
-    [logoutMutation],
-  );
+  const logout = useCallback(async () => {
+    try {
+      await logoutMutation.mutateAsync();
+    } catch {
+      /* `logoutRequest` clears the token in `finally` even when the API fails */
+    } finally {
+      router.replace(appPaths.login);
+    }
+  }, [logoutMutation, router]);
 
   return {
     loginMutation,

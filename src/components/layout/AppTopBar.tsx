@@ -31,7 +31,7 @@ export function AppTopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const sub = userQuery.isFetching ? "Syncing profile…" : " ";
 
   return (
-    <header className="sticky top-0 z-30 flex h-[3.25rem] shrink-0 items-center justify-between gap-3 border-b border-zinc-200/50 bg-white/75 px-3 backdrop-blur-md dark:border-zinc-800/50 dark:bg-zinc-950/75 sm:h-14 sm:px-5">
+    <header className="sticky top-0 z-30 flex h-[3.25rem] shrink-0 items-center justify-between gap-3 border-b border-zinc-200/40 bg-white/70 px-3 shadow-[0_1px_0_rgba(255,255,255,0.65)_inset] backdrop-blur-xl dark:border-zinc-800/40 dark:bg-zinc-950/70 dark:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] sm:h-14 sm:px-5">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button
           type="button"

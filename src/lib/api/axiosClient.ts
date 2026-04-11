@@ -258,7 +258,7 @@ let _client: AxiosInstance | null = null;
  * - `withCredentials: true`, `withXSRFToken: true`, cookie/header names — Sanctum CSRF (see `applyXsrfHeaderFromCookie`; call `fetchSanctumCsrfCookie` before login/logout)
  * - Server-side only: `API_TLS_INSECURE=1` uses `getBillingBackendHttpsAgent()` (same as proxy route handlers)
  * - Browser: **401** or **403** → clear token + `location.replace('/login')`, except failed **login** POST (`/login`).
- * - Client: if `expires_in` from login is stored and elapsed, clear session + redirect to `/login` before sending.
+ * - Client: if login `expires_in` (minutes → stored as absolute expiry) has passed, clear session + redirect to `/login` before sending.
  */
 export function getApiClient(): AxiosInstance {
   if (!_client) {

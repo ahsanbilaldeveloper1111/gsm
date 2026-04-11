@@ -1,4 +1,4 @@
-import { CustomersView } from "@/components/views/ListViews";
+import { CustomerCrudView } from "@/components/views/CustomerCrudView";
 import { PageFrame } from "@/components/layout/PageFrame";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -12,7 +12,7 @@ export default function CustomersPage() {
         description="Customer records and per-customer product pricing."
       />
       <div className="mt-8">
-        <CustomersView />
+        <CustomerCrudView />
       </div>
     </PageFrame>
   );

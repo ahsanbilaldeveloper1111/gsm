@@ -1,4 +1,4 @@
-import { InvoicesView } from "@/components/views/ListViews";
+import { InvoiceCrudView } from "@/components/views/InvoiceCrudView";
 import { PageFrame } from "@/components/layout/PageFrame";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -12,7 +12,7 @@ export default function InvoicesPage() {
         description="Create, send, and collect on invoices."
       />
       <div className="mt-8">
-        <InvoicesView />
+        <InvoiceCrudView />
       </div>
     </PageFrame>
   );

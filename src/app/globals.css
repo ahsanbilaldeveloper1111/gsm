@@ -1,26 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8faf8;
+  --background: #f4f7f5;
   --foreground: #0f172a;
   --muted: #64748b;
   --surface: #ffffff;
-  --surface-elevated: rgba(255, 255, 255, 0.72);
+  --surface-elevated: rgba(255, 255, 255, 0.78);
   --accent: #059669;
-  --accent-muted: rgba(5, 150, 105, 0.12);
+  --accent-muted: rgba(5, 150, 105, 0.14);
   --ring-subtle: rgba(15, 23, 42, 0.06);
+  --glow-accent: rgba(16, 185, 129, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0c0f0e;
+    --background: #090c0b;
     --foreground: #f1f5f9;
     --muted: #94a3b8;
-    --surface: #111816;
-    --surface-elevated: rgba(17, 24, 22, 0.85);
+    --surface: #0f1412;
+    --surface-elevated: rgba(15, 20, 18, 0.88);
     --accent: #34d399;
-    --accent-muted: rgba(52, 211, 153, 0.12);
+    --accent-muted: rgba(52, 211, 153, 0.14);
     --ring-subtle: rgba(241, 245, 249, 0.06);
+    --glow-accent: rgba(52, 211, 153, 0.12);
   }
 }
 
@@ -52,14 +54,19 @@ body {
   body {
     background-image:
       radial-gradient(
-        ellipse 120% 80% at 50% -20%,
-        rgba(5, 150, 105, 0.07),
-        transparent 50%
+        ellipse 140% 90% at 50% -25%,
+        rgba(5, 150, 105, 0.09),
+        transparent 52%
       ),
       radial-gradient(
-        ellipse 60% 40% at 100% 0%,
-        rgba(59, 130, 246, 0.04),
-        transparent 40%
+        ellipse 70% 50% at 100% 5%,
+        rgba(59, 130, 246, 0.055),
+        transparent 42%
+      ),
+      radial-gradient(
+        ellipse 50% 35% at 0% 80%,
+        rgba(20, 184, 166, 0.04),
+        transparent 45%
       );
     background-attachment: fixed;
   }
@@ -69,14 +76,19 @@ body {
   body {
     background-image:
       radial-gradient(
-        ellipse 100% 60% at 50% -10%,
-        rgba(52, 211, 153, 0.08),
-        transparent 45%
+        ellipse 110% 65% at 50% -15%,
+        rgba(52, 211, 153, 0.1),
+        transparent 48%
       ),
       radial-gradient(
-        ellipse 50% 30% at 100% 0%,
-        rgba(56, 189, 248, 0.05),
-        transparent 40%
+        ellipse 55% 35% at 100% 0%,
+        rgba(56, 189, 248, 0.06),
+        transparent 42%
+      ),
+      radial-gradient(
+        ellipse 45% 40% at 0% 90%,
+        rgba(45, 212, 191, 0.04),
+        transparent 50%
       );
     background-attachment: fixed;
   }

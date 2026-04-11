@@ -73,9 +73,9 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   return (
-    <aside className="flex h-full flex-col border-r border-zinc-200/60 bg-white/80 shadow-[4px_0_24px_-12px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/90 dark:shadow-[4px_0_32px_-8px_rgba(0,0,0,0.4)]">
-      <div className="relative border-b border-zinc-200/60 px-4 py-6 dark:border-zinc-800/80">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+    <aside className="flex h-full flex-col border-r border-zinc-200/50 bg-gradient-to-b from-white/95 via-zinc-50/40 to-white/90 shadow-[4px_0_32px_-12px_rgba(15,23,42,0.1)] backdrop-blur-2xl dark:border-zinc-800/70 dark:from-zinc-950 dark:via-zinc-950/95 dark:to-zinc-950/90 dark:shadow-[4px_0_40px_-8px_rgba(0,0,0,0.5)]">
+      <div className="relative border-b border-zinc-200/50 px-4 py-6 dark:border-zinc-800/70">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
         <Link
           href={appPaths.dashboard}
           onClick={onNavigate}
@@ -94,11 +94,14 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
           const visible = group.items.filter((item) => canSeeHref(item.href));
           if (visible.length === 0) return null;
           return (
-            <div key={group.title} className="mb-7 last:mb-0">
-              <p className="mb-2.5 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500">
+            <div
+              key={group.title}
+              className="mb-7 last:mb-0 rounded-2xl border border-zinc-200/40 bg-zinc-50/40 p-2 dark:border-zinc-800/50 dark:bg-zinc-900/35"
+            >
+              <p className="mb-2 px-2.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
                 {group.title}
               </p>
-              <ul className="space-y-1">
+              <ul className="space-y-0.5">
                 {visible.map((item) => (
                   <li key={item.href}>
                     <NavLink
