@@ -2,6 +2,11 @@ import type { Instrumentation } from "next";
 
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { applyInsecureNodeTlsFromEnv } = await import(
+      "@/lib/api/applyInsecureNodeTls"
+    );
+    applyInsecureNodeTlsFromEnv();
+
     const { initLogsDir } = await import("./instrumentation.node");
     initLogsDir();
   }

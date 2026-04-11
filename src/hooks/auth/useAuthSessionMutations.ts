@@ -26,7 +26,7 @@ export function useAuthSessionMutations(setToken: SetToken) {
 
   const logoutMutation = useMutation({
     mutationFn: logoutRequest,
-    onSuccess: () => {
+    onSettled: () => {
       setToken(null);
     },
   });

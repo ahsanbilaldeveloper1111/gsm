@@ -1,5 +1,5 @@
 /**
- * Remove `undefined` entries so JSON bodies match Laravel optional fields.
+ * Remove `undefined` entries so JSON bodies match optional backend fields.
  */
 export function omitUndefined<T extends Record<string, unknown>>(
   obj: T,

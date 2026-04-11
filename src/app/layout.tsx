@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: { default: "Billing", template: "%s · Billing" },
-  description: "Billing frontend for Laravel Accounts API",
+  description: "Billing frontend for the billing backend API",
 };
 
 export default function RootLayout({

@@ -23,7 +23,7 @@ export type ApiPagination = {
   to: number;
 };
 
-export type LaravelValidationError = {
+export type BillingBackendValidationError = {
   message: string;
   errors: Record<string, string[]>;
 };

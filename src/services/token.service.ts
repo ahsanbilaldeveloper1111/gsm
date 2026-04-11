@@ -5,11 +5,11 @@ export type BootstrapTokenResult = {
 };
 
 /**
- * Obtains a JWT via the Next.js route handler (GET → Laravel `/api/get-token` server-side).
+ * Obtains a JWT via the Next.js route handler (GET → billing backend `/api/get-token` server-side).
  * Persists the token for subsequent Axios (`apiClient`) requests.
  */
 export async function bootstrapTokenFromServer(): Promise<string> {
-  const res = await fetch("/api/auth/laravel-token", {
+  const res = await fetch("/api/auth/billing-token", {
     method: "GET",
     headers: { Accept: "application/json" },
   });
@@ -29,7 +29,7 @@ export async function bootstrapTokenFromServer(): Promise<string> {
       ? (json as { token: string }).token
       : null;
   if (!token) {
-    throw new Error("Invalid token response from /api/auth/laravel-token");
+    throw new Error("Invalid token response from billing backend token route");
   }
   setStoredToken(token);
   return token;

@@ -1,6 +1,7 @@
 /**
- * Path builders for Laravel `routes/api.php` (prefix `/api` is already in NEXT_PUBLIC_API_BASE_URL).
- * All paths are relative to that base (e.g. `/user` → `.../api/user`).
+ * Path builders for the billing backend — relative to Axios `baseURL` = `{origin}/api/backend`
+ * (Axios `baseURL` is `/api/billing-backend` in the browser; on the server, `getInternalNextOrigin()` + that path.)
+ * Example: `/user` → `GET https://host/api/backend/user` (Sanctum Bearer).
  */
 export function createApiRoutes(base: string) {
   const b = base.replace(/\/$/, "");
@@ -357,7 +358,7 @@ export function createApiRoutes(base: string) {
   };
 }
 
-/** Path-only helpers (`/user`, `/invoices`, …) for Axios `baseURL` + `NEXT_PUBLIC_API_BASE_URL`. */
+/** Path-only helpers (`/user`, `/invoices`, …) for Axios `baseURL` (`/api/backend`). */
 export const apiRoutes = createApiRoutes("");
 
 /** Same factory with an explicit base segment, e.g. `buildApiRouteTree("/api")` for documentation parity. */

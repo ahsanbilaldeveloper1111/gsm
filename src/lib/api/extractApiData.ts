@@ -12,7 +12,7 @@ export type ExtractedList<T = Record<string, unknown>> = {
 };
 
 /**
- * Normalizes Laravel list payloads: `data: T[]` or nested `data: { data: T[], ... }`.
+ * Normalizes billing backend list payloads: `data: T[]` or nested `data: { data: T[], ... }`.
  */
 export function extractListRows<T extends Record<string, unknown>>(
   res: ApiSuccessResponse<unknown> | undefined | null,

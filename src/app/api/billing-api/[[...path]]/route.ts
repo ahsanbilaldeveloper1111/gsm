@@ -1,0 +1,36 @@
+import type { NextRequest } from "next/server";
+import { getServerBillingBackendPublicApiBaseUrl } from "@/lib/env";
+import { proxyRequestToUrl } from "@/lib/api/proxyRequestToUrl";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+async function handle(
+  req: NextRequest,
+  context: { params: Promise<{ path?: string[] }> },
+) {
+  let base: string;
+  try {
+    base = getServerBillingBackendPublicApiBaseUrl();
+  } catch {
+    return Response.json(
+      { error: "Billing backend public API URL not configured" },
+      { status: 500 },
+    );
+  }
+  const { path } = await context.params;
+  const suffix = path?.length ? `/${path.join("/")}` : "";
+  const search = new URL(req.url).search;
+  const targetUrl = `${base.replace(/\/$/, "")}${suffix}${search}`;
+  return proxyRequestToUrl(req, targetUrl, {
+    upstreamBaseUrl: base.replace(/\/$/, ""),
+    nextPrefix: "/api/billing-api",
+  });
+}
+
+export const GET = handle;
+export const POST = handle;
+export const PUT = handle;
+export const PATCH = handle;
+export const DELETE = handle;
+export const HEAD = handle;

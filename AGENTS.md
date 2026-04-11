@@ -13,5 +13,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **`components/views/`** — Page-level UI for those routes. Not named `pages` (avoids clashing with `app/**/page.tsx`).
 - **`components/layout/`**, **`components/providers/`**, **`components/dashboard/`**, **`components/ui/`** — shared chrome and widgets.
 - **`hooks/<domain>/`** — API domain subfolders; each hook is `useXxx.ts` in camelCase.
-- **`services/*.service.ts`** — API clients; **`models/*.ts`** — TypeScript types aligned with Laravel resources.
-- **`lib/routes/apiRoutes.ts`** — Central Laravel API path builders (`apiRoutes` export).
+- **`services/*.service.ts`** — API clients; **`models/*.ts`** — TypeScript types aligned with the billing backend resources.
+- **`lib/routes/apiRoutes.ts`** — Central billing backend API path builders (`apiRoutes` export).

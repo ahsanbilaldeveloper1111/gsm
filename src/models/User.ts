@@ -6,7 +6,7 @@ export interface UserAccessInfo {
   [key: string]: unknown;
 }
 
-/** Laravel `User` JSON from `GET /api/user` — extend as your API evolves. */
+/** Billing backend `User` JSON from `GET /api/user` — extend as your API evolves. */
 export interface User {
   id?: number;
   first_name?: string;

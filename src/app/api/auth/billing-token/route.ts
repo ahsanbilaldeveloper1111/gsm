@@ -1,7 +1,7 @@
 import axios from "axios";
-import https from "https";
 import { NextResponse } from "next/server";
-import { getServerApiBaseUrl } from "@/lib/env";
+import { getBillingBackendHttpsAgent } from "@/lib/api/nodeTlsAgent";
+import { getInternalNextOrigin } from "@/lib/env";
 import {
   redactSensitiveUrl,
   serializeUnknownError,
@@ -24,36 +24,33 @@ function extractToken(payload: unknown): string | null {
 }
 
 /**
- * Server-only token bootstrap: calls Laravel `GET /api/get-token` (optional `API_APP_SECRET` as query param).
- *
- * Uses Axios so TLS errors include `code` (e.g. UNABLE_TO_VERIFY_LEAF_SIGNATURE) and optional
- * `API_TLS_INSECURE=1` for self-signed HTTPS on a trusted LAN (prefer HTTP or a real CA when possible).
+ * Server-only token bootstrap: `GET /api/billing-api/get-token` → same proxy as the browser
+ * (billing backend `GET /api/get-token`, optional `API_APP_SECRET` query param).
  */
 export async function GET() {
-  let base: string;
+  let url: URL;
   try {
-    base = getServerApiBaseUrl();
+    url = new URL(`${getInternalNextOrigin()}/api/billing-api/get-token`);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Configuration error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
   const secret = process.env.API_APP_SECRET;
-  const url = new URL(`${base}/get-token`);
   url.searchParams.set("is_super_user", "1");
   if (secret) {
     url.searchParams.set("app_secret", secret);
   }
 
-  try {
-    const tlsInsecure = process.env.API_TLS_INSECURE === "1";
+  const targetUrl = url.toString();
 
-    const res = await axios.get<string>(url.toString(), {
+  try {
+    const res = await axios.get<string>(targetUrl, {
       responseType: "text",
       transitional: { forcedJSONParsing: false },
       headers: { Accept: "application/json" },
-      httpsAgent: tlsInsecure
-        ? new https.Agent({ rejectUnauthorized: false })
+      httpsAgent: targetUrl.startsWith("https:")
+        ? getBillingBackendHttpsAgent()
         : undefined,
       validateStatus: () => true,
       timeout: 30_000,
@@ -67,8 +64,9 @@ export async function GET() {
       } catch {
         return NextResponse.json(
           {
-            error: "Laravel returned non-JSON (check API URL, TLS, and Laravel logs)",
-            laravelStatus: res.status,
+            error:
+              "Billing backend returned non-JSON (check API URL, TLS, and server logs)",
+            upstreamStatus: res.status,
             preview: raw.slice(0, 400),
             targetUrl: redactSensitiveUrl(url),
           },
@@ -90,7 +88,7 @@ export async function GET() {
     if (!token) {
       return NextResponse.json(
         {
-          error: "Could not parse token from Laravel response",
+          error: "Could not parse token from billing backend response",
           detail: json,
           targetUrl: redactSensitiveUrl(url),
         },
@@ -101,12 +99,13 @@ export async function GET() {
   } catch (e) {
     const hints = [
       `From this server, run: curl -v ${redactSensitiveUrl(url)}`,
-      "HTTPS + self-signed cert: set API_TLS_INSECURE=1 on the Next process (trusted LAN only), use NODE_EXTRA_CA_CERTS, or point API_BASE_URL to http:// for internal calls.",
-      "ECONNREFUSED / ETIMEDOUT: Laravel not reachable from this host, wrong port, or firewall.",
+      "Docker: set INTERNAL_NEXT_ORIGIN to this service’s reachable URL (e.g. http://frontend:3000).",
+      "HTTPS + self-signed to billing backend: API_TLS_INSECURE=1 on Next (trusted LAN), or NODE_EXTRA_CA_CERTS, or HTTP for API_BASE_URL.",
+      "ECONNREFUSED / ETIMEDOUT: wrong INTERNAL_NEXT_ORIGIN, billing backend host, port, or firewall.",
     ];
     return NextResponse.json(
       {
-        error: "Could not reach Laravel (network/TLS).",
+        error: "Could not reach billing backend (network/TLS).",
         targetUrl: redactSensitiveUrl(url),
         detail: serializeUnknownError(e),
         hints,

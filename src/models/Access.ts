@@ -68,7 +68,7 @@ function normalizePermissionArray(arr: unknown[]): UserPermission[] {
   return dedupePermissions(out);
 }
 
-/** True if Laravel sends `is_super_user` on the user model. */
+/** True if the billing backend sends `is_super_user` on the user model. */
 export function isSuperUserFromUser(user: unknown): boolean {
   if (!user || typeof user !== "object") return false;
   const u = user as Record<string, unknown>;
@@ -87,7 +87,7 @@ export function isSuperAdmin(userPermissions: UserPermission[]): boolean {
 }
 
 /**
- * Collect permissions from typical Laravel shapes:
+ * Collect permissions from typical API shapes:
  * - `user.user_access_info.permissions` (array or map)
  * - `user.permissions`
  * - `user.ranks[].permissions`

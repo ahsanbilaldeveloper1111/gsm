@@ -123,7 +123,7 @@ export function DashboardOverview() {
             <code className="rounded bg-black/5 px-1 dark:bg-white/10">
               /get-token
             </code>{" "}
-            or sign in — see your Laravel env.
+            or sign in — see your billing backend env.
           </p>
         </div>
       ) : null}

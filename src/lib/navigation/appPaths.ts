@@ -1,5 +1,6 @@
-/** Browser routes for the Next.js app (not Laravel API paths). */
+/** Browser routes for the Next.js app (not billing backend proxy paths). */
 export const appPaths = {
+  login: "/login",
   dashboard: "/dashboard",
   analytics: "/analytics",
   users: "/users",

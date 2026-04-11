@@ -17,7 +17,7 @@ type AuthContextValue = {
   token: string | null;
   isBootstrapping: boolean;
   bootstrapError: Error | null;
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<LoginResult>;
   logout: () => Promise<void>;
   refreshServerToken: () => Promise<string>;
   /** Same credentials flow as `login()`; exposes React Query mutation state. */
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (payload: LoginPayload) => {
       setBootstrapError(null);
-      await loginInner(payload);
+      return loginInner(payload);
     },
     [loginInner],
   );
