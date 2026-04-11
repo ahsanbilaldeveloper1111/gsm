@@ -16,13 +16,6 @@ type SetToken = (token: string | null) => void;
 export function useAuthSessionMutations(setToken: SetToken) {
   const queryClient = useQueryClient();
 
-  const bootstrapMutation = useMutation({
-    mutationFn: bootstrapTokenFromServer,
-    onSuccess: (jwt) => {
-      setToken(jwt);
-    },
-  });
-
   const loginMutation = useMutation({
     mutationFn: (payload: LoginPayload) => loginRequest(payload),
     onSuccess: async () => {
@@ -48,15 +41,15 @@ export function useAuthSessionMutations(setToken: SetToken) {
     [logoutMutation],
   );
 
-  const refreshServerToken = useCallback(
-    () => bootstrapMutation.mutateAsync(),
-    [bootstrapMutation],
-  );
+  const refreshServerToken = useCallback(async () => {
+    const jwt = await bootstrapTokenFromServer();
+    setToken(jwt);
+    return jwt;
+  }, [setToken]);
 
   return {
     loginMutation,
     logoutMutation,
-    bootstrapMutation,
     login,
     logout,
     refreshServerToken,

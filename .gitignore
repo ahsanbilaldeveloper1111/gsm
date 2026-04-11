@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# app request logs (winston daily rotate)
+/logs/
+
 # production
 /build
 

@@ -2,6 +2,16 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from "axio
 import { getPublicApiBaseUrl } from "@/lib/env";
 import { getStoredToken } from "@/lib/auth/tokenStore";
 
+/** Node-only: browser TLS is controlled by the browser; this applies to SSR / server usage. */
+function getNodeHttpsAgent(): import("https").Agent | undefined {
+  if (typeof window !== "undefined") return undefined;
+  if (process.env.API_TLS_INSECURE !== "1") return undefined;
+  // Avoid bundling `node:https` for the client — only loaded on the server when env is set.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Node-only TLS agent; not imported at top level
+  const https = require("node:https") as typeof import("node:https");
+  return new https.Agent({ rejectUnauthorized: false });
+}
+
 const SUPER_Q = "is_super_user";
 const SUPER_V = "1";
 
@@ -74,6 +84,7 @@ let _client: AxiosInstance | null = null;
  * Singleton Axios instance for Laravel `/api`:
  * - `is_super_user=1` on every request (query + JSON/FormData body when applicable)
  * - `Authorization: Bearer <jwt>` when a token is stored
+ * - Server-side only: `API_TLS_INSECURE=1` sets `https.Agent({ rejectUnauthorized: false })` (same as laravel-token route)
  */
 export function getApiClient(): AxiosInstance {
   if (!_client) {
@@ -81,6 +92,7 @@ export function getApiClient(): AxiosInstance {
       baseURL: getPublicApiBaseUrl(),
       headers: { Accept: "application/json" },
       validateStatus: (status) => status >= 200 && status < 300,
+      httpsAgent: getNodeHttpsAgent(),
     });
     applyRequestInterceptors(_client);
   }

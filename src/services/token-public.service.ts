@@ -1,6 +1,6 @@
 /**
  * Token endpoints without JWT (`/get-token`, `/refresh-token`, …).
- * Prefer `bootstrapTokenFromServer` + `POST /api/auth/laravel-token` for secrets.
+ * Prefer `bootstrapTokenFromServer` + `GET /api/auth/laravel-token` for secrets.
  */
 import { apiGet, apiPost, type QueryParams } from "@/lib/api/http";
 import { apiRoutes } from "@/lib/routes/apiRoutes";
