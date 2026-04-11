@@ -2,6 +2,7 @@ import { apiClient } from "@/lib/api/axiosClient";
 import { apiRoutes } from "@/lib/routes/apiRoutes";
 import type { ApiSuccessResponse } from "@/lib/api/types";
 import { clearStoredToken, setStoredToken } from "@/lib/auth/tokenStore";
+import { User } from "@/models/User";
 
 export type LoginPayload = {
   samaccountname: string;
@@ -37,7 +38,7 @@ export async function logoutRequest(): Promise<void> {
 }
 
 export type CurrentUserResponse = {
-  user?: unknown;
+  user?: User;
   message?: string;
 };
 
