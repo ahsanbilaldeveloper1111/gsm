@@ -70,25 +70,6 @@ export function buildDashboardCounterBlocks(
     }
   }
 
-  const re = data.resellers;
-  if (re) {
-    const items = [
-      int("resellers.total", "Total", re.total),
-      int("resellers.active", "Active", re.active),
-      int("resellers.inactive", "Inactive", re.inactive),
-    ].filter(nonNull);
-    if (items.length > 1) {
-      blocks.push({
-        kind: "circles",
-        id: "resellers",
-        title: "Resellers",
-        items,
-      });
-    } else if (items.length === 1) {
-      blocks.push({ kind: "single", entry: items[0]! });
-    }
-  }
-
   const cat = data.categories;
   if (cat) {
     const items = [

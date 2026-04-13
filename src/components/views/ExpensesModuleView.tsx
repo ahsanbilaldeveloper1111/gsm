@@ -5,6 +5,7 @@ import {
   extractListRows,
   formatCellValue,
 } from "@/lib/api/extractApiData";
+import { DeleteConfirmationDialog } from "@/components/crud/DeleteConfirmationDialog";
 import {
   createExpenseFormDefaults,
   omitUndefined,
@@ -17,6 +18,7 @@ import {
   useUpdateExpense,
 } from "@/hooks/expenses/useExpenseMutations";
 import { useExpenses } from "@/hooks/expenses/useExpenses";
+import { resolveDeleteItemLabel } from "@/lib/crud/resolveDeleteItemLabel";
 
 type ExpenseFormFields = {
   expense_date: string;
@@ -24,7 +26,6 @@ type ExpenseFormFields = {
   amount: string;
   company_id: string;
   category_id: string;
-  reseller_id: string;
   currency: string;
   tax_type: "" | "percentage" | "amount";
   tax_amount: string;
@@ -42,7 +43,6 @@ function emptyForm(): ExpenseFormFields {
     amount: String(d.amount ?? 0),
     company_id: "",
     category_id: "",
-    reseller_id: "",
     currency: "",
     tax_type: "",
     tax_amount: "",
@@ -60,7 +60,6 @@ function expenseToForm(e: Expense): ExpenseFormFields {
     amount: String(e.amount ?? 0),
     company_id: e.company_id != null ? String(e.company_id) : "",
     category_id: e.category_id != null ? String(e.category_id) : "",
-    reseller_id: e.reseller_id != null ? String(e.reseller_id) : "",
     currency: e.currency ?? "",
     tax_type: e.tax_type ?? "",
     tax_amount:
@@ -89,7 +88,6 @@ function formToCreatePayload(fields: ExpenseFormFields): CreateExpenseData {
     amount: Number(fields.amount),
     company_id: fields.company_id ? Number(fields.company_id) : undefined,
     category_id: fields.category_id ? Number(fields.category_id) : undefined,
-    reseller_id: fields.reseller_id ? Number(fields.reseller_id) : undefined,
     currency: fields.currency.trim() || undefined,
     tax_type: fields.tax_type || undefined,
     tax_amount: fields.tax_amount ? Number(fields.tax_amount) : undefined,
@@ -110,7 +108,6 @@ function formToUpdatePayload(fields: ExpenseFormFields): UpdateExpenseData {
     amount: Number(fields.amount),
     company_id: fields.company_id ? Number(fields.company_id) : undefined,
     category_id: fields.category_id ? Number(fields.category_id) : undefined,
-    reseller_id: fields.reseller_id ? Number(fields.reseller_id) : undefined,
     currency: fields.currency.trim() || undefined,
     tax_type: fields.tax_type || undefined,
     tax_amount: fields.tax_amount ? Number(fields.tax_amount) : undefined,
@@ -133,6 +130,7 @@ export function ExpensesModuleView() {
   const listQuery = useExpenses();
   const categoriesQuery = useExpenseCategories();
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [deleteExpenseId, setDeleteExpenseId] = useState<number | null>(null);
   const [form, setForm] = useState<ExpenseFormFields>(() => emptyForm());
 
   const createMut = useCreateExpense();
@@ -142,6 +140,14 @@ export function ExpensesModuleView() {
   const { rows } = useMemo(
     () => extractListRows(listQuery.data ?? null),
     [listQuery.data],
+  );
+
+  const deleteExpenseLabel = useMemo(
+    () =>
+      resolveDeleteItemLabel(listQuery.data, deleteExpenseId, {
+        labelKeys: ["description"],
+      }),
+    [listQuery.data, deleteExpenseId],
   );
 
   const categoryOptions = useMemo(() => {
@@ -174,6 +180,17 @@ export function ExpensesModuleView() {
 
   const mutError =
     createMut.error ?? updateMut.error ?? deleteMut.error ?? null;
+
+  function confirmDeleteExpense() {
+    if (deleteExpenseId == null) return;
+    const id = deleteExpenseId;
+    deleteMut.mutate(id, {
+      onSuccess: () => {
+        setDeleteExpenseId(null);
+        if (editingId === id) resetToCreate();
+      },
+    });
+  }
 
   return (
     <div className="space-y-10">
@@ -292,20 +309,6 @@ export function ExpensesModuleView() {
                 value={form.currency}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, currency: e.target.value }))
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="reseller_id">
-                Reseller ID
-              </label>
-              <input
-                id="reseller_id"
-                type="number"
-                className={inputClass}
-                value={form.reseller_id}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, reseller_id: e.target.value }))
                 }
               />
             </div>
@@ -501,17 +504,7 @@ export function ExpensesModuleView() {
                           disabled={busy}
                           onClick={() => {
                             if (!Number.isFinite(idNum)) return;
-                            if (
-                              typeof window !== "undefined" &&
-                              !window.confirm("Delete this expense?")
-                            ) {
-                              return;
-                            }
-                            deleteMut.mutate(idNum, {
-                              onSuccess: () => {
-                                if (editingId === idNum) resetToCreate();
-                              },
-                            });
+                            setDeleteExpenseId(idNum);
                           }}
                         >
                           Delete
@@ -525,6 +518,16 @@ export function ExpensesModuleView() {
           </div>
         )}
       </section>
+
+      <DeleteConfirmationDialog
+        show={deleteExpenseId != null}
+        title="Delete expense?"
+        message="This removes the expense via DELETE /expenses/{id}. This cannot be undone."
+        itemName={deleteExpenseLabel}
+        onHide={() => setDeleteExpenseId(null)}
+        onConfirm={confirmDeleteExpense}
+        isDeleting={deleteMut.isPending}
+      />
     </div>
   );
 }

@@ -18,5 +18,10 @@ export function useCompanyMutations() {
     onSuccess: invalidate,
   });
 
-  return { createUpdate, remove };
+  const importCsv = useMutation({
+    mutationFn: (body: FormData) => companyService.importCompanies(body),
+    onSuccess: invalidate,
+  });
+
+  return { createUpdate, remove, importCsv };
 }

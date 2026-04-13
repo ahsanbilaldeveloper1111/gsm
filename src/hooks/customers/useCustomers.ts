@@ -6,8 +6,13 @@ import { queryKeys } from "@/lib/queryKeys";
 import type { IndexCustomerParams } from "@/models/Customer";
 import { customerService } from "@/services/customers.service";
 
-export function useCustomers(params?: IndexCustomerParams) {
-  const enabled = useAuthQueryEnabled();
+export function useCustomers(
+  params?: IndexCustomerParams,
+  options?: { enabled?: boolean },
+) {
+  const auth = useAuthQueryEnabled();
+  const enabled =
+    auth && (options?.enabled === undefined ? true : options.enabled);
   return useQuery({
     queryKey: queryKeys.customers.list(
       (params as Record<string, unknown> | undefined) ?? null,

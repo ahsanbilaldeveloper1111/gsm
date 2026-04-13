@@ -5,6 +5,8 @@ export type ApiSuccessResponse<T = unknown> = {
   data: T;
   pagination?: ApiPagination;
   meta?: Record<string, unknown>;
+  /** Some index endpoints (e.g. invoices) attach aggregates next to paginated `data`. */
+  summary?: unknown;
 };
 
 export type ApiErrorResponse = {

@@ -18,6 +18,7 @@ export * from "@/hooks/company/useCompanies";
 export * from "@/hooks/company/useCompany";
 
 export * from "@/hooks/crm/useCrmCompanies";
+export * from "@/hooks/crm/useCrmCompanyNameMap";
 
 export * from "@/hooks/currencies/useActiveCurrencies";
 export * from "@/hooks/currencies/useBaseCurrency";
@@ -64,8 +65,11 @@ export * from "@/hooks/ranks/useRanks";
 export * from "@/hooks/reports/useReportsDashboard";
 export * from "@/hooks/reports/useReportsEndpoints";
 
+export * from "@/hooks/resellers";
+
 export * from "@/hooks/stripe/useStripeEndpoints";
 export * from "@/hooks/stripe/useStripePublishableKey";
+export * from "@/hooks/stripe/useStripeCustomerPaymentMutations";
 
 export * from "@/hooks/token-public/useTokenPublic";
 

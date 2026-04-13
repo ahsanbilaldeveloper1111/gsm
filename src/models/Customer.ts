@@ -35,14 +35,18 @@ export interface Customer {
   updated_at?: string;
 }
 
+/** `GET /api/backend/customers` — sort via `order[column]` / `order[dir]`. */
 export interface IndexCustomerParams extends PaginationParams {
   search?: string;
   crm_company_id?: string | null;
   tenant_id?: string | null;
+  vendor_id?: number;
   email?: string | null;
   phone?: string | null;
   load_profile?: boolean;
   load_invoices_count?: boolean;
+  "order[column]"?: string;
+  "order[dir]"?: "asc" | "desc";
 }
 
 export interface CreateCustomerData {

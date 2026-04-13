@@ -4,15 +4,15 @@ import { ModelListBody } from "@/components/views/ModelListBody";
 import { useAuditLogs } from "@/hooks/audit-logs/useAuditLogs";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useCrmCompanies } from "@/hooks/crm/useCrmCompanies";
-import { useCurrencies } from "@/hooks/currencies/useCurrencies";
+import { CurrencyCrudView } from "@/components/views/CurrencyCrudView";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useExpenseCategories } from "@/hooks/expense-categories/useExpenseCategories";
 import { useExpenses } from "@/hooks/expenses/useExpenses";
 import { useInventory } from "@/hooks/inventory/useInventory";
 import { useInvoices } from "@/hooks/invoices/useInvoices";
 import { usePayments } from "@/hooks/payments/usePayments";
-import { useProductCategories } from "@/hooks/product-categories/useProductCategories";
-import { useProducts } from "@/hooks/products/useProducts";
+import { ProductCrudView } from "@/components/views/ProductCrudView";
+import { ProductCategoryCrudView } from "@/components/views/ProductCategoryCrudView";
 import { useReportsDashboard } from "@/hooks/reports/useReportsDashboard";
 import { useStripePublishableKey } from "@/hooks/stripe/useStripePublishableKey";
 import { useUsers } from "@/hooks/users/useUsers";
@@ -54,18 +54,15 @@ export function ExpenseCategoriesView() {
 }
 
 export function ProductsView() {
-  const q = useProducts();
-  return <ModelListBody query={q} title="Products" />;
+  return <ProductCrudView />;
 }
 
 export function ProductCategoriesView() {
-  const q = useProductCategories();
-  return <ModelListBody query={q} title="Product categories" />;
+  return <ProductCategoryCrudView />;
 }
 
 export function CurrenciesView() {
-  const q = useCurrencies();
-  return <ModelListBody query={q} title="Currencies" />;
+  return <CurrencyCrudView />;
 }
 
 export function ReportsView() {

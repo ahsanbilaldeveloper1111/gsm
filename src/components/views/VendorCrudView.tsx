@@ -1,79 +1,123 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ConfirmDialog } from "@/components/crud/ConfirmDialog";
-import { CrudEntityTable } from "@/components/crud/CrudEntityTable";
-import { FormField, FormModal } from "@/components/crud/FormModal";
-import { RecordDetailModal } from "@/components/crud/RecordDetailModal";
-import { useVendor } from "@/hooks/vendors/useVendor";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { DeleteConfirmationDialog } from "@/components/crud/DeleteConfirmationDialog";
+import { CreateUpdateVendorModal } from "@/components/vendors/CreateUpdateVendorModal";
+import { VendorListTable } from "@/components/vendors/VendorListTable";
+import { ViewVendorModal } from "@/components/vendors/ViewVendorModal";
 import { useVendorMutations } from "@/hooks/vendors/useVendorMutations";
 import { useVendors } from "@/hooks/vendors/useVendors";
-import { unwrapApiSuccessData } from "@/lib/dashboard/unwrapAnalyticsPayload";
+import { usePermissions } from "@/hooks/permissions/usePermissions";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import {
-  showAppToast,
-  showBillingBackendErrorToast,
-} from "@/lib/toast/appToast";
+  buildVendorListSearchParams,
+  parseVendorListSearchParams,
+  type VendorListUrlState,
+} from "@/lib/vendors/vendorListUrl";
+import { extractListRows } from "@/lib/api/extractApiData";
+import { resolveDeleteItemLabel } from "@/lib/crud/resolveDeleteItemLabel";
+import { showAppToast, showBillingBackendErrorToast } from "@/lib/toast/appToast";
+import type { IndexVendorParams, Vendor } from "@/models/Vendor";
+import { ModuleName } from "@/models/Module";
+
+const LIMIT_OPTIONS = [10, 20, 25, 50, 100] as const;
 
 export function VendorCrudView() {
-  const listQuery = useVendors();
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [listState, setListState] = useState<VendorListUrlState>(() =>
+    parseVendorListSearchParams(searchParams),
+  );
+
+  const debouncedSearch = useDebouncedValue(listState.search, 300);
+
+  useEffect(() => {
+    const q = buildVendorListSearchParams(listState, {
+      searchOverride: debouncedSearch,
+    });
+    const next = q.toString();
+    if (next === searchParams.toString()) return;
+    router.replace(`${pathname}?${next}`, { scroll: false });
+  }, [
+    listState.page,
+    listState.limit,
+    listState.sort_field,
+    listState.sort_direction,
+    listState.filter_email,
+    listState.filter_phone,
+    debouncedSearch,
+    pathname,
+    router,
+    searchParams,
+  ]);
+
+  const {
+    canView,
+    canCreate,
+    canUpdate,
+    canDelete,
+    isSuperAdmin,
+    isUserLoading,
+  } = usePermissions();
+  const mod = ModuleName.VENDOR;
+  const allowView = isSuperAdmin || canView(mod);
+  const allowCreate = isSuperAdmin || canCreate(mod);
+  const allowUpdate = isSuperAdmin || canUpdate(mod);
+  const allowDelete = isSuperAdmin || canDelete(mod);
+
+  const listParams = useMemo((): IndexVendorParams => {
+    return {
+      page: listState.page,
+      limit: listState.limit,
+      load_resellers: true,
+      "order[column]": listState.sort_field,
+      "order[dir]": listState.sort_direction,
+      ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
+      ...(listState.filter_email.trim()
+        ? { email: listState.filter_email.trim() }
+        : {}),
+      ...(listState.filter_phone.trim()
+        ? { phone: listState.filter_phone.trim() }
+        : {}),
+    };
+  }, [
+    listState.page,
+    listState.limit,
+    listState.sort_field,
+    listState.sort_direction,
+    listState.filter_email,
+    listState.filter_phone,
+    debouncedSearch,
+  ]);
+
+  const listQuery = useVendors(listParams, { enabled: allowView });
+  const { pagination } = extractListRows(listQuery.data);
   const mutations = useVendorMutations();
   const [detailId, setDetailId] = useState<number | string | null>(null);
   const [editId, setEditId] = useState<number | string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  /** Remounts create/update modal so create mode starts clean without setState-in-effect. */
+  const [formModalKey, setFormModalKey] = useState(0);
   const [deleteId, setDeleteId] = useState<number | string | null>(null);
 
-  const detailQuery = useVendor(detailId, { load_profile: true });
-  const editQuery = useVendor(editId, { load_profile: true });
+  const deleteItemLabel = useMemo(
+    () =>
+      resolveDeleteItemLabel(listQuery.data, deleteId, {
+        labelKeys: ["name", "email"],
+      }),
+    [listQuery.data, deleteId],
+  );
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [status, setStatus] = useState("active");
-
-  useEffect(() => {
-    if (!formOpen) return;
-    if (editId == null) {
-      setName("");
-      setEmail("");
-      setPhone("");
-      setStatus("active");
-      return;
-    }
-    const raw = unwrapApiSuccessData<Record<string, unknown>>(editQuery.data);
-    if (!raw) return;
-    setName(String(raw.name ?? ""));
-    setEmail(String(raw.email ?? ""));
-    setPhone(String(raw.phone ?? ""));
-    setStatus(String(raw.status ?? "active"));
-  }, [formOpen, editId, editQuery.data]);
+  const bumpFormModalKey = () => setFormModalKey((k) => k + 1);
 
   const openCreate = () => {
     setEditId(null);
+    bumpFormModalKey();
     setFormOpen(true);
   };
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const body: Record<string, unknown> = {
-      name: name.trim(),
-      email: email.trim() || undefined,
-      phone: phone.trim() || undefined,
-      status: status.trim() || undefined,
-    };
-    try {
-      if (editId == null) {
-        await mutations.create.mutateAsync(body);
-        showAppToast("Vendor created.", "success");
-      } else {
-        await mutations.update.mutateAsync({ id: editId, body });
-        showAppToast("Vendor updated.", "success");
-      }
-      setFormOpen(false);
-      setEditId(null);
-    } catch (err) {
-      showBillingBackendErrorToast(err);
-    }
-  }
 
   async function confirmDelete() {
     if (deleteId == null) return;
@@ -86,86 +130,185 @@ export function VendorCrudView() {
     }
   }
 
+  function handleSort(field: string) {
+    setListState((s) => {
+      if (s.sort_field === field) {
+        return {
+          ...s,
+          sort_direction: s.sort_direction === "asc" ? "desc" : "asc",
+          page: 1,
+        };
+      }
+      return {
+        ...s,
+        sort_field: field,
+        sort_direction: "asc",
+        page: 1,
+      };
+    });
+  }
+
+  if (isUserLoading) {
+    return (
+      <div className="h-40 animate-pulse rounded-2xl bg-zinc-100/80 dark:bg-zinc-800/60" />
+    );
+  }
+
+  if (!allowView) {
+    return (
+      <p
+        className="rounded-2xl border border-amber-200/80 bg-amber-50/60 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
+        role="status"
+      >
+        You do not have permission to view vendors.
+      </p>
+    );
+  }
+
   return (
     <>
-      <CrudEntityTable
+      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white/60 p-4 dark:border-zinc-800/80 dark:bg-zinc-950/40">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          List filters — GET /vendors
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+              Search
+            </label>
+            <input
+              type="search"
+              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              value={listState.search}
+              onChange={(e) =>
+                setListState((s) => ({
+                  ...s,
+                  search: e.target.value,
+                  page: 1,
+                }))
+              }
+              placeholder="Search by vendor name…"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+              Email (exact)
+            </label>
+            <input
+              type="text"
+              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              value={listState.filter_email}
+              onChange={(e) =>
+                setListState((s) => ({
+                  ...s,
+                  filter_email: e.target.value,
+                  page: 1,
+                }))
+              }
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+              Phone (exact)
+            </label>
+            <input
+              type="text"
+              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              value={listState.filter_phone}
+              onChange={(e) =>
+                setListState((s) => ({
+                  ...s,
+                  filter_phone: e.target.value,
+                  page: 1,
+                }))
+              }
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+              Page size
+            </label>
+            <select
+              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              value={listState.limit}
+              onChange={(e) =>
+                setListState((s) => ({
+                  ...s,
+                  limit: Number(e.target.value),
+                  page: 1,
+                }))
+              }
+            >
+              {LIMIT_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n} per page
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <VendorListTable
         query={listQuery}
         title="Vendors"
+        sortField={listState.sort_field}
+        sortDir={listState.sort_direction}
+        onSort={handleSort}
+        pagination={pagination}
+        onPageChange={(page) => setListState((s) => ({ ...s, page }))}
+        canView={allowView}
+        canCreate={allowCreate}
+        canUpdate={allowUpdate}
+        canDelete={allowDelete}
         onCreate={openCreate}
         onView={(id) => setDetailId(id)}
         onEdit={(id) => {
           setEditId(id);
+          bumpFormModalKey();
           setFormOpen(true);
         }}
         onDelete={(id) => setDeleteId(id)}
       />
 
-      <RecordDetailModal
-        open={detailId != null}
-        title="Vendor"
-        subtitle="Profile and related fields from the API."
-        data={detailQuery.data ?? null}
-        loading={detailQuery.isPending && detailId != null}
-        error={
-          detailQuery.isError ? String(detailQuery.error) : null
+      <ViewVendorModal
+        show={detailId != null}
+        vendorId={detailId}
+        onHide={() => setDetailId(null)}
+        onEdit={
+          allowUpdate
+            ? (v: Vendor) => {
+                setDetailId(null);
+                setEditId(v.id);
+                bumpFormModalKey();
+                setFormOpen(true);
+              }
+            : undefined
         }
-        onClose={() => setDetailId(null)}
       />
 
-      <FormModal
+      <CreateUpdateVendorModal
+        key={formModalKey}
         open={formOpen}
-        title={editId == null ? "New vendor" : "Edit vendor"}
+        vendorId={editId}
         onClose={() => {
           setFormOpen(false);
           setEditId(null);
         }}
-        onSubmit={handleSubmit}
-        loading={mutations.create.isPending || mutations.update.isPending}
-      >
-        <FormField label="Name">
-          <input
-            required
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={name}
-            onChange={(ev) => setName(ev.target.value)}
-          />
-        </FormField>
-        <FormField label="Email">
-          <input
-            type="email"
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
-          />
-        </FormField>
-        <FormField label="Phone">
-          <input
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={phone}
-            onChange={(ev) => setPhone(ev.target.value)}
-          />
-        </FormField>
-        <FormField label="Status">
-          <select
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={status}
-            onChange={(ev) => setStatus(ev.target.value)}
-          >
-            <option value="active">active</option>
-            <option value="inactive">inactive</option>
-            <option value="pending">pending</option>
-            <option value="suspended">suspended</option>
-          </select>
-        </FormField>
-      </FormModal>
+        onSuccess={() => {
+          setFormOpen(false);
+          setEditId(null);
+        }}
+      />
 
-      <ConfirmDialog
-        open={deleteId != null}
+      <DeleteConfirmationDialog
+        show={deleteId != null}
         title="Delete vendor?"
         message="This cannot be undone. The API may reject the delete if the vendor is in use."
+        itemName={deleteItemLabel}
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteId(null)}
-        loading={mutations.remove.isPending}
+        onHide={() => setDeleteId(null)}
+        isDeleting={mutations.remove.isPending}
       />
     </>
   );

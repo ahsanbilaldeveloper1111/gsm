@@ -45,6 +45,13 @@ export function createApiRoutes(base: string) {
       update: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
       destroy: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
     }))(`${b}/vendors`),
+    resellers: ((x: string) => ({
+      fromMainApp: () => `${x}/from-main-app`,
+      fromMainAppByTenantId: (tenantId: string) =>
+        `${x}/from-main-app/by-tenant/${encodeURIComponent(tenantId)}`,
+      nameByTenantId: (tenantId: string) =>
+        `${x}/name-by-tenant/${encodeURIComponent(tenantId)}`,
+    }))(`${b}/resellers`),
     crm: ((x: string) => ({
       companies: () => `${x}/companies`,
       company: (id: number | string) =>

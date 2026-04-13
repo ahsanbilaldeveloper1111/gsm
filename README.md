@@ -1,5 +1,7 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+**Architecture and how auth/API/proxy fit together:** see [docs/PROJECT-OVERVIEW.md](docs/PROJECT-OVERVIEW.md).
+
 ## Getting Started
 
 First, run the development server:

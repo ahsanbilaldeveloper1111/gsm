@@ -30,6 +30,9 @@ export interface VendorProfile {
   payment_terms?: number;
   currency?: string;
   vat_exemption?: boolean;
+  /** VAT rate percentage (profile). */
+  vat_rate?: number;
+  main_app_visibility?: boolean;
   invoice_delivery_methods?: string[];
   contact_person_name?: string;
   contact_person_email?: string;
@@ -60,11 +63,16 @@ export interface VendorBankAccount {
   updated_at?: string;
 }
 
+/** `GET /api/backend/vendors` — query keys match Laravel `VendorController`/FormRequest. */
 export interface IndexVendorParams extends PaginationParams {
   search?: string;
+  email?: string;
+  phone?: string;
   load_resellers?: boolean;
   load_companies?: boolean;
   load_profile?: boolean;
+  "order[column]"?: string;
+  "order[dir]"?: "asc" | "desc";
 }
 
 export enum VendorStatus {

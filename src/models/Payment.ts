@@ -74,6 +74,11 @@ export interface CreatePaymentData {
   consent_given?: boolean;
   /** Optional: frontend can generate to prevent duplicate payments. */
   idempotency_key?: string;
+  /** Backend may require these for Stripe invoice flows. */
+  customer_id?: number;
+  tenant_id?: string;
+  cardholder_name?: string;
+  billing_postal_code?: string;
 }
 
 export interface CreateRefundData {
@@ -102,15 +107,15 @@ export interface IndexPaymentParams extends PaginationParams {
   vendor_id?: number | string | null;
   tenant_id?: string | null;
   crm_company_id?: string | null;
-  payment_method?: PaymentMethod;
-  status?: PaymentStatus;
+  /** Backend index: `stripe` | `bank_transfer` | `cash` | `check` (and others). */
+  payment_method?: PaymentMethod | "check" | string;
+  status?: PaymentStatus | string;
   company_id?: number;
   date_from?: string;
   date_to?: string;
-  order?: {
-    column: string;
-    dir: "asc" | "desc";
-  };
+  sort_field?: string;
+  sort_direction?: "asc" | "desc";
+  crm_company_not_null?: boolean;
 }
 
 export interface PaymentStats {

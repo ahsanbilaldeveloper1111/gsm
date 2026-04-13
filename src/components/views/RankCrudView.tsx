@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ConfirmDialog } from "@/components/crud/ConfirmDialog";
+import { useEffect, useMemo, useState } from "react";
+import { DeleteConfirmationDialog } from "@/components/crud/DeleteConfirmationDialog";
 import { CrudEntityTable } from "@/components/crud/CrudEntityTable";
 import { FormField, FormModal } from "@/components/crud/FormModal";
 import { RecordDetailModal } from "@/components/crud/RecordDetailModal";
@@ -9,6 +9,7 @@ import { useRank } from "@/hooks/ranks/useRank";
 import { useRankMutations } from "@/hooks/ranks/useRankMutations";
 import { useRanks } from "@/hooks/ranks/useRanks";
 import { unwrapApiSuccessData } from "@/lib/dashboard/unwrapAnalyticsPayload";
+import { resolveDeleteItemLabel } from "@/lib/crud/resolveDeleteItemLabel";
 import {
   showAppToast,
   showBillingBackendErrorToast,
@@ -22,6 +23,14 @@ export function RankCrudView() {
   const [editId, setEditId] = useState<number | string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | string | null>(null);
+
+  const deleteItemLabel = useMemo(
+    () =>
+      resolveDeleteItemLabel(listQuery.data, deleteId, {
+        labelKeys: ["name", "title"],
+      }),
+    [listQuery.data, deleteId],
+  );
 
   const detailQuery = useRank(detailId);
   const editQuery = useRank(editId);
@@ -136,13 +145,14 @@ export function RankCrudView() {
         </FormField>
       </FormModal>
 
-      <ConfirmDialog
-        open={deleteId != null}
+      <DeleteConfirmationDialog
+        show={deleteId != null}
         title="Delete rank?"
         message="Deletes via DELETE /ranks/{id}. This may fail if users are still assigned to this rank."
+        itemName={deleteItemLabel}
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteId(null)}
-        loading={mutations.remove.isPending}
+        onHide={() => setDeleteId(null)}
+        isDeleting={mutations.remove.isPending}
       />
     </>
   );

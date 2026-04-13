@@ -66,6 +66,26 @@ export const queryKeys = {
     detail: (id: number | string | null) =>
       [...queryKeys.vendors.all, "detail", id] as const,
   },
+  resellers: {
+    all: ["resellers"] as const,
+    fromMainApp: (params: Record<string, unknown> | null) =>
+      [...queryKeys.resellers.all, "fromMainApp", params] as const,
+    fromMainAppByTenant: (
+      tenantId: number | string | null,
+      params: Record<string, unknown> | null,
+    ) =>
+      [
+        ...queryKeys.resellers.all,
+        "fromMainAppByTenant",
+        tenantId,
+        params,
+      ] as const,
+    nameByTenant: (
+      tenantId: number | string | null,
+      params: Record<string, unknown> | null,
+    ) =>
+      [...queryKeys.resellers.all, "nameByTenant", tenantId, params] as const,
+  },
   company: {
     all: ["company"] as const,
     list: (params: Record<string, unknown> | null) =>
@@ -83,6 +103,16 @@ export const queryKeys = {
       params: Record<string, unknown> | null,
     ) =>
       [...queryKeys.company.all, "discountApplicability", id, params] as const,
+    discountApplicabilityList: (
+      id: number | string | null,
+      params: Record<string, unknown> | null,
+    ) =>
+      [
+        ...queryKeys.company.all,
+        "discountApplicabilityList",
+        id,
+        params,
+      ] as const,
   },
   invoices: {
     all: ["invoices"] as const,

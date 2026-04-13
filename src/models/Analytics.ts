@@ -31,7 +31,8 @@ export interface DashboardCounters {
   products?: {
     total: number;
   };
-  resellers: {
+  /** Omitted from dashboard UI; API may still return counts. */
+  resellers?: {
     total: number;
     active: number;
     inactive: number;

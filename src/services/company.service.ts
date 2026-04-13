@@ -1,5 +1,5 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
-import type { Company } from "@/models/Company";
+import type { Company, IndexCompanyParams } from "@/models/Company";
 import {
   apiDelete,
   apiGet,
@@ -14,8 +14,11 @@ import { apiRoutes } from "@/lib/routes/apiRoutes";
 const r = apiRoutes.company;
 
 export const companyService = {
-  list: (params?: QueryParams) =>
-    apiGet<ApiSuccessResponse<Company[]>>(r.index(), params),
+  list: (params?: IndexCompanyParams) =>
+    apiGet<ApiSuccessResponse<Company[]>>(
+      r.index(),
+      params as QueryParams | undefined,
+    ),
 
   show: (id: number | string, params?: QueryParams) =>
     apiGet<ApiSuccessResponse<Company>>(r.show(id), params),

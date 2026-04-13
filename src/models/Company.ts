@@ -17,10 +17,14 @@ export interface Company {
   tenant_id?: string | null;
 
   vendor?: Vendor;
+  /** Some list payloads expose reseller alongside vendor. */
+  reseller?: { name?: string; tenant_id?: string | null };
   company_iccid_id?: number;
   country?: string;
 
   profile?: CompanyProfile;
+  /** Present on some list/show payloads when `load_outstanding_amount` is set. */
+  outstanding_amount?: number;
   created_at?: string;
   user_access_info: UserAccessInfo;
   company_id?: number;
@@ -35,6 +39,9 @@ export interface ProductCompanyPricing {
   company_id: number;
   product_id: number;
   selling_price: number;
+  /** Optional override shown in pricing UIs. */
+  custom_description?: string | null;
+  discount_applicability_id?: number | null;
   is_active: boolean;
   renewal_start_date?: string;
   renewal_end_date?: string;
@@ -46,6 +53,8 @@ export interface ProductCompanyPricing {
 
   product?: Product;
   company?: CompanyBasic;
+  /** Present on customer-scoped product-pricing list payloads. */
+  customer?: CompanyBasic;
   discount_applicability?: ProductDiscountApplicability;
 }
 
@@ -73,6 +82,7 @@ export interface IndexProductCompanyPricingParams
 
 export interface ProductDiscountApplicability {
   id: number;
+  name?: string;
   product_id: number;
   customer_id: number;
   is_applicable: boolean;
@@ -225,10 +235,17 @@ export enum FacInfoCallingAccess {
   DISALLOW_FAC_INFO = 0,
 }
 
+/** `GET /api/backend/company` — filters + `order[column]` / `order[dir]`. */
 export interface IndexCompanyParams extends PaginationParams {
   search?: string;
+  email?: string;
+  phone?: string;
+  country?: string;
   load_ranks?: boolean;
   load_profile?: boolean;
+  load_calling_access?: boolean;
+  load_minify_data?: boolean;
+  load_outstanding_amount?: boolean;
   parent_id?: number | null;
   tenant_id?: string | null;
   vendor_id?: number | null;
@@ -236,6 +253,8 @@ export interface IndexCompanyParams extends PaginationParams {
   load_available_extensions?: boolean;
   ids?: number[];
   user_count?: boolean;
+  "order[column]"?: string;
+  "order[dir]"?: "asc" | "desc";
 }
 
 export interface IndexCompanyProfileParams extends PaginationParams {

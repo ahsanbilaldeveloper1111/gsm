@@ -1,0 +1,407 @@
+"use client";
+
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { FormField, FormModal } from "@/components/crud/FormModal";
+import { useCompanies } from "@/hooks/company/useCompanies";
+import { useActiveCurrencies, currenciesFromResponse } from "@/hooks/currencies/useActiveCurrencies";
+import { useProduct } from "@/hooks/products/useProduct";
+import { useProductMutations } from "@/hooks/products/useProductMutations";
+import { useProductCategories } from "@/hooks/product-categories/useProductCategories";
+import { useMainAppResellerNameMap } from "@/hooks/resellers/useMainAppResellerNameMap";
+import { useVendors } from "@/hooks/vendors/useVendors";
+import { errorsFromAxios } from "@/lib/api/errorsFromAxios";
+import { extractListRows, getApiData } from "@/lib/api/extractApiData";
+import {
+  buildProductMutationPayload,
+  defaultProductFormState,
+  productFormStateFromApiProduct,
+  type ProductFormState,
+} from "@/lib/products/productFormState";
+import {
+  hasValidationErrors,
+  validateProductForm,
+} from "@/lib/products/productFormValidation";
+import {
+  showAppToast,
+  showBillingBackendErrorToast,
+} from "@/lib/toast/appToast";
+import type { Company } from "@/models/Company";
+import type { Product } from "@/models/Product";
+import type { Vendor } from "@/models/Vendor";
+
+type CatRow = { id: number; name?: string };
+
+type CreateUpdateProductModalProps = {
+  open: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+  productId: number | string | null;
+};
+
+export function CreateUpdateProductModal({
+  open,
+  onClose,
+  onSuccess,
+  productId,
+}: CreateUpdateProductModalProps) {
+  const isEdit = productId != null;
+  const [form, setForm] = useState<ProductFormState>(defaultProductFormState);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+
+  const mutations = useProductMutations();
+  const categoriesQ = useProductCategories({ limit: 500 });
+  const currenciesQ = useActiveCurrencies();
+  const detailQ = useProduct(open && isEdit ? productId : null);
+  const mainAppResellerMap = useMainAppResellerNameMap();
+
+  const vendorsQ = useVendors(
+    { page: 1, limit: 500, load_resellers: true },
+    { enabled: open && isEdit },
+  );
+  const allCompaniesQ = useCompanies(
+    { page: 1, limit: 1000, load_profile: false },
+    { enabled: open && isEdit },
+  );
+  const filteredCompaniesQ = useCompanies(
+    {
+      page: 1,
+      limit: 1000,
+      load_profile: true,
+      ...(selectedVendorId
+        ? { vendor_id: Number.parseInt(selectedVendorId, 10) }
+        : {}),
+    },
+    {
+      enabled:
+        open &&
+        isEdit &&
+        selectedVendorId != null &&
+        selectedVendorId !== "",
+    },
+  );
+
+  const categoryRows = useMemo(() => {
+    const { rows } = extractListRows<CatRow>(categoriesQ.data);
+    return rows.filter((r) => r.id != null);
+  }, [categoriesQ.data]);
+
+  const currencies = useMemo(() => {
+    const list = currenciesFromResponse(currenciesQ.data);
+    return list.slice().sort((a, b) => a.code.localeCompare(b.code));
+  }, [currenciesQ.data]);
+
+  const vendorRows = useMemo(() => {
+    const { rows } = extractListRows<Vendor & Record<string, unknown>>(
+      vendorsQ.data,
+    );
+    return rows;
+  }, [vendorsQ.data]);
+
+  const companyOptions = useMemo(() => {
+    const placeholder = selectedVendorId
+      ? "Select a company…"
+      : "Select a vendor first…";
+    if (!selectedVendorId) {
+      return [{ value: "", label: placeholder }];
+    }
+    const { rows } = extractListRows<Company & Record<string, unknown>>(
+      filteredCompaniesQ.data,
+    );
+    const opts = rows.map((c) => {
+      const tid = c.tenant_id != null ? String(c.tenant_id) : "";
+      const label =
+        mainAppResellerMap[String(tid)] ??
+        (typeof c.name === "string" ? c.name : "") ??
+        tid;
+      return { value: tid, label: label.trim() ? label : tid || "—" };
+    });
+    return [{ value: "", label: "Select a company…" }, ...opts];
+  }, [
+    selectedVendorId,
+    filteredCompaniesQ.data,
+    mainAppResellerMap,
+  ]);
+
+  useEffect(() => {
+    if (!open || !isEdit) return;
+    const raw = getApiData(detailQ.data) as
+      | (Product & Record<string, unknown>)
+      | undefined;
+    if (!raw) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from GET show
+    setForm(productFormStateFromApiProduct(raw));
+    setErrors({});
+  }, [open, isEdit, detailQ.data]);
+
+  useEffect(() => {
+    if (!open || !isEdit) return;
+    const tid = form.tenant_id.trim();
+    if (!tid) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync vendor when tenant cleared
+      setSelectedVendorId(null);
+      return;
+    }
+    const { rows } = extractListRows<Company & Record<string, unknown>>(
+      allCompaniesQ.data,
+    );
+    const company = rows.find((c) => String(c.tenant_id ?? "") === tid);
+    if (company?.vendor_id != null) {
+      setSelectedVendorId(String(company.vendor_id));
+    }
+  }, [open, isEdit, form.tenant_id, allCompaniesQ.data]);
+
+  useEffect(() => {
+    if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when sheet closes
+      setSelectedVendorId(null);
+    }
+  }, [open]);
+
+  function handleVendorChange(v: string) {
+    setSelectedVendorId(v || null);
+    setForm((s) => ({ ...s, tenant_id: "" }));
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const nextErrors = validateProductForm(form, isEdit);
+    setErrors(nextErrors);
+    if (hasValidationErrors(nextErrors)) return;
+    const body = buildProductMutationPayload(form, isEdit);
+    try {
+      if (isEdit && productId != null) {
+        await mutations.update.mutateAsync({ id: productId, body });
+        showAppToast("Product updated.", "success");
+      } else {
+        await mutations.create.mutateAsync(body);
+        showAppToast("Product created.", "success");
+      }
+      setForm(defaultProductFormState());
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      const mapped = errorsFromAxios(err);
+      setErrors(mapped);
+      const hasField = Object.keys(mapped).some((k) => k !== "submit");
+      if (!hasField) showBillingBackendErrorToast(err);
+    }
+  }
+
+  const loading =
+    mutations.create.isPending ||
+    mutations.update.isPending ||
+    (isEdit && detailQ.isPending);
+
+  const inputErr = (field: string) =>
+    errors[field]
+      ? "border-rose-500 ring-1 ring-rose-500/30 dark:border-rose-600"
+      : "";
+
+  return (
+    <FormModal
+      open={open}
+      title={isEdit ? "Edit product" : "Create product"}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+      submitLabel={isEdit ? "Update product" : "Create"}
+      loading={loading}
+      panelClassName="max-w-2xl"
+    >
+      {errors.submit ? (
+        <div
+          className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-100"
+          role="alert"
+        >
+          {errors.submit}
+        </div>
+      ) : null}
+
+      {isEdit ? (
+        <>
+          <FormField label="Vendor">
+            <select
+              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              value={selectedVendorId ?? ""}
+              onChange={(e) => handleVendorChange(e.target.value)}
+            >
+              <option value="">Select a vendor…</option>
+              {vendorRows.map((v) => (
+                <option key={v.id} value={String(v.id)}>
+                  {v.name ?? `Vendor ${v.id}`}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+              Select a vendor first, then choose the company (tenant) this
+              product is attached to.
+            </p>
+          </FormField>
+
+          <FormField label="Company (tenant)">
+            <select
+              className={`w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 ${inputErr("tenant_id")}`}
+              value={form.tenant_id}
+              disabled={!selectedVendorId}
+              onChange={(e) =>
+                setForm((s) => ({ ...s, tenant_id: e.target.value }))
+              }
+            >
+              {companyOptions.map((o, i) => (
+                <option key={`${o.value}-${i}`} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {errors.tenant_id ? (
+              <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+                {errors.tenant_id}
+              </p>
+            ) : null}
+            <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+              Product is scoped to the selected company when provided.
+            </p>
+          </FormField>
+        </>
+      ) : null}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField label="Product name *">
+          <input
+            required
+            className={`w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 ${inputErr("name")}`}
+            value={form.name}
+            onChange={(e) => {
+              setForm((s) => ({ ...s, name: e.target.value }));
+              if (errors.name) setErrors((prev) => ({ ...prev, name: "" }));
+            }}
+            placeholder="Enter product name"
+          />
+          {errors.name ? (
+            <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+              {errors.name}
+            </p>
+          ) : null}
+        </FormField>
+        <FormField label="SKU">
+          <input
+            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            value={form.sku}
+            onChange={(e) => setForm((s) => ({ ...s, sku: e.target.value }))}
+            placeholder="Stock keeping unit (optional)"
+          />
+        </FormField>
+      </div>
+
+      <FormField label="Category *">
+        <select
+          className={`w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 ${inputErr("category_id")}`}
+          value={form.category_id === "" ? "" : String(form.category_id)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setForm((s) => ({
+              ...s,
+              category_id: v === "" ? "" : Number(v),
+            }));
+            if (errors.category_id)
+              setErrors((prev) => ({ ...prev, category_id: "" }));
+          }}
+        >
+          <option value="">Select category</option>
+          {categoryRows.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name ?? `Category ${c.id}`}
+            </option>
+          ))}
+        </select>
+        {errors.category_id ? (
+          <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+            {errors.category_id}
+          </p>
+        ) : null}
+      </FormField>
+
+      <FormField label="Description">
+        <textarea
+          rows={3}
+          className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          value={form.description}
+          onChange={(e) =>
+            setForm((s) => ({ ...s, description: e.target.value }))
+          }
+          placeholder="Product description"
+        />
+      </FormField>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField label="Base price *">
+          <input
+            type="number"
+            step="any"
+            min="0"
+            className={`w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 ${inputErr("base_price")}`}
+            value={form.base_price}
+            onChange={(e) => {
+              setForm((s) => ({ ...s, base_price: e.target.value }));
+              if (errors.base_price)
+                setErrors((prev) => ({ ...prev, base_price: "" }));
+            }}
+            placeholder="0.00"
+          />
+          {errors.base_price ? (
+            <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+              {errors.base_price}
+            </p>
+          ) : null}
+        </FormField>
+        <FormField label="Currency">
+          <select
+            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            value={form.currency}
+            onChange={(e) =>
+              setForm((s) => ({ ...s, currency: e.target.value }))
+            }
+          >
+            {currencies.length === 0 ? (
+              <option value="USD">USD</option>
+            ) : (
+              currencies.map((c) => (
+                <option key={c.id ?? c.code} value={c.code}>
+                  {c.code} — {c.name} ({c.symbol})
+                </option>
+              ))
+            )}
+          </select>
+        </FormField>
+      </div>
+
+      <label className="flex cursor-pointer items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={form.is_service}
+          onChange={(e) =>
+            setForm((s) => ({ ...s, is_service: e.target.checked }))
+          }
+        />
+        <span>
+          <span className="font-medium">Service product</span>
+          <span className="mt-0.5 block text-[11px] text-zinc-500 dark:text-zinc-400">
+            Service products do not use inventory tracking.
+          </span>
+        </span>
+      </label>
+
+      <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={form.is_active}
+          onChange={(e) =>
+            setForm((s) => ({ ...s, is_active: e.target.checked }))
+          }
+        />
+        Active
+      </label>
+    </FormModal>
+  );
+}

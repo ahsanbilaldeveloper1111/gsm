@@ -28,6 +28,17 @@ export interface ExpenseCategory {
   expenses?: Expense[];
 }
 
+export interface CreateExpenseCategoryData {
+  company_id: number;
+  name: string;
+  description?: string;
+  color?: string;
+  is_active?: boolean;
+  parent_id?: number;
+}
+
+export type UpdateExpenseCategoryData = Partial<CreateExpenseCategoryData>;
+
 export interface Expense {
   id: number;
   company_id: number;

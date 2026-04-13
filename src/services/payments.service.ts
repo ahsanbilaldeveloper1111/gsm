@@ -1,5 +1,11 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
-import { apiGet, apiGetBlob, apiPost, type QueryParams } from "@/lib/api/http";
+import {
+  apiGet,
+  apiGetBlob,
+  apiPost,
+  apiPostForm,
+  type QueryParams,
+} from "@/lib/api/http";
 import { apiRoutes } from "@/lib/routes/apiRoutes";
 import type {
   CreatePaymentData,
@@ -19,6 +25,10 @@ export const paymentService = {
 
   create: (body: CreatePaymentData) =>
     apiPost<ApiSuccessResponse<Payment>>(r.store(), body),
+
+  /** Multipart create (manual payments with evidence files). */
+  createForm: (formData: FormData) =>
+    apiPostForm<ApiSuccessResponse<Payment>>(r.store(), formData),
 
   refund: (body: CreateRefundData) =>
     apiPost<ApiSuccessResponse<unknown>>(r.refund(), body),

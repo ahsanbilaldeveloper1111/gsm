@@ -10,6 +10,8 @@ type FormModalProps = {
   onSubmit: (e: React.FormEvent) => void;
   submitLabel?: string;
   loading?: boolean;
+  /** Panel width (default `max-w-lg`). Use e.g. `max-w-2xl` for two-column forms. */
+  panelClassName?: string;
 };
 
 export function FormModal({
@@ -20,6 +22,7 @@ export function FormModal({
   onSubmit,
   submitLabel = "Save",
   loading,
+  panelClassName,
 }: FormModalProps) {
   if (!open) return null;
 
@@ -31,7 +34,9 @@ export function FormModal({
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+      <div
+        className={`relative z-10 flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 ${panelClassName ?? "max-w-lg"}`}
+      >
         <div className="border-b border-zinc-200/70 px-5 py-3 dark:border-zinc-800">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{title}</h2>

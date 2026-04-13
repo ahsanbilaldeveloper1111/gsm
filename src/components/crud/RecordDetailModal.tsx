@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { formatCellValue } from "@/lib/api/extractApiData";
 
 function DetailBlock({ data, depth = 0 }: { data: unknown; depth?: number }) {
@@ -62,6 +63,8 @@ type RecordDetailModalProps = {
   /** Unwrapped entity or full API payload — nested objects are rendered as cards. */
   data: unknown;
   onClose: () => void;
+  /** Rendered below the detail tree (e.g. invoice payment UI). */
+  afterBody?: ReactNode;
 };
 
 export function RecordDetailModal({
@@ -72,6 +75,7 @@ export function RecordDetailModal({
   error,
   data,
   onClose,
+  afterBody,
 }: RecordDetailModalProps) {
   if (!open) return null;
 
@@ -135,7 +139,10 @@ export function RecordDetailModal({
           ) : inner == null ? (
             <p className="text-sm text-zinc-500">No data.</p>
           ) : (
-            <DetailBlock data={inner} />
+            <>
+              <DetailBlock data={inner} />
+              {afterBody}
+            </>
           )}
         </div>
       </div>

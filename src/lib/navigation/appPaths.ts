@@ -26,3 +26,13 @@ export const appPaths = {
 } as const;
 
 export type AppPath = (typeof appPaths)[keyof typeof appPaths];
+
+/** Browser URL for a tenant’s product pricing page (`tenant_id` or company key). */
+export function companyProductPricingPath(tenantId: string): string {
+  return `/company/pricing/${encodeURIComponent(tenantId)}`;
+}
+
+/** Browser URL for a customer’s subscription / product pricing (`crm_company_id` or numeric id). */
+export function customerProductPricingPath(customerId: string): string {
+  return `/customers/pricing/${encodeURIComponent(customerId)}`;
+}

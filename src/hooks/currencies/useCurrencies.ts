@@ -6,8 +6,13 @@ import { queryKeys } from "@/lib/queryKeys";
 import type { IndexCurrencyParams } from "@/models/Currency";
 import { currencyService } from "@/services/currencies.service";
 
-export function useCurrencies(params?: IndexCurrencyParams) {
-  const enabled = useAuthQueryEnabled();
+export function useCurrencies(
+  params?: IndexCurrencyParams,
+  options?: { enabled?: boolean },
+) {
+  const auth = useAuthQueryEnabled();
+  const enabled =
+    auth && (options?.enabled === undefined ? true : options.enabled);
   return useQuery({
     queryKey: queryKeys.currencies.index(
       (params as Record<string, unknown> | undefined) ?? null,
