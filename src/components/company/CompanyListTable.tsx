@@ -3,6 +3,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { ApiPagination, ApiSuccessResponse } from "@/lib/api/types";
 import { extractListRows } from "@/lib/api/extractApiData";
+import { useMainAppResellerNameMap } from "@/hooks/resellers/useMainAppResellerNameMap";
 import type { Company } from "@/models/Company";
 
 /** Column order matches body cells: name, credit, country, outstanding, email, created. */
@@ -72,11 +73,20 @@ function formatMoney(amount: number | undefined, currency: string): string {
   }
 }
 
-function displayName(c: CompanyRow): string {
-  return (
-    (c.name && String(c.name).trim()) ||
-    (c.tenant_id != null ? String(c.tenant_id) : "—")
-  );
+function displayName(
+  c: CompanyRow,
+  resellerNameByTenantId: Record<string, string>,
+): string {
+  const direct = c.name && String(c.name).trim();
+  if (direct) return direct;
+  const tid =
+    c.tenant_id != null && String(c.tenant_id).trim() !== ""
+      ? String(c.tenant_id).trim()
+      : "";
+  if (tid && resellerNameByTenantId[tid]) {
+    return resellerNameByTenantId[tid];
+  }
+  return tid || "—";
 }
 
 function vendorLabel(c: CompanyRow): string {
@@ -105,6 +115,8 @@ export function CompanyListTable({
   onDelete,
   onProductPricing,
 }: CompanyListTableProps) {
+  const mainAppResellerNameMap = useMainAppResellerNameMap();
+
   if (query.isPending) {
     return (
       <div className="space-y-3 rounded-2xl border border-zinc-200/60 bg-white/50 p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
@@ -232,7 +244,7 @@ export function CompanyListTable({
                     >
                       <td className="px-3 py-2">
                         <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                          {displayName(c)}
+                          {displayName(c, mainAppResellerNameMap)}
                         </div>
                         {phone ? (
                           <div className="text-[11px] text-zinc-500 dark:text-zinc-400">

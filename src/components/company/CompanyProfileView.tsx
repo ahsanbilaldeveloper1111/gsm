@@ -7,6 +7,7 @@ import { useCompanyDiscountApplicability } from "@/hooks/company/useCompanyDisco
 import { useCompanyDocuments } from "@/hooks/company/useCompanyDocuments";
 import { useTenantDisplayNameMap } from "@/hooks/company/useTenantDisplayNameMap";
 import { usePermissions } from "@/hooks/permissions/usePermissions";
+import { getCompanyDocumentsList } from "@/lib/company/companyDocuments";
 import { downloadCompanyDocumentFile } from "@/lib/company/downloadCompanyDocumentFile";
 import { formatCurrency } from "@/lib/currency";
 import { unwrapApiSuccessData } from "@/lib/dashboard/unwrapAnalyticsPayload";
@@ -14,20 +15,6 @@ import { parseStripePaymentMethods } from "@/lib/stripe/parseStripePaymentMethod
 import { showAppToast } from "@/lib/toast/appToast";
 import type { Company, CompanyDocument } from "@/models/Company";
 import { OutstandingInvoicesModal } from "@/components/company/OutstandingInvoicesModal";
-
-function getDocumentsList(documentsData: unknown): CompanyDocument[] {
-  const unwrapped = unwrapApiSuccessData<CompanyDocument[]>(documentsData);
-  if (Array.isArray(unwrapped)) return unwrapped;
-  if (
-    documentsData != null &&
-    typeof documentsData === "object" &&
-    "data" in documentsData
-  ) {
-    const d = (documentsData as { data: unknown }).data;
-    if (Array.isArray(d)) return d as CompanyDocument[];
-  }
-  return [];
-}
 
 function profileStatusPill(status: string | undefined) {
   const s = status ?? "incomplete";
@@ -133,7 +120,7 @@ export function CompanyProfileView({ profile, onEdit }: CompanyProfileViewProps)
     useCompanyDocuments(tid || null);
 
   const documentsList = useMemo(
-    () => getDocumentsList(documentsData),
+    () => getCompanyDocumentsList(documentsData),
     [documentsData],
   );
 

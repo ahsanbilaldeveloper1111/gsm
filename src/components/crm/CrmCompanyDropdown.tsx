@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { extractListRows } from "@/lib/api/extractApiData";
 import { crmCompanyIdsMatch, normalizeCrmCompanyId } from "@/lib/crm/crmCompanyId";
 import { useCrmCompanies } from "@/hooks/crm/useCrmCompanies";
@@ -24,9 +25,6 @@ export type CrmCompanyDropdownProps = {
   fetchParams?: Record<string, unknown>;
   isClearable?: boolean;
 };
-
-const selectCls =
-  "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900";
 
 function getOptionValue(c: CrmCompanyDropdownItem): string {
   const idVal = c.id ?? c.company_id;
@@ -122,8 +120,7 @@ export function CrmCompanyDropdown({
 
   const normalizedValue = normalizeCrmCompanyId(value) ?? "";
 
-  const handleChange = (raw: string) => {
-    const selected = raw === "" ? null : raw;
+  const handleChange = (selected: string | null) => {
     onChange(selected);
     if (onSelectCompany) {
       const company = selected
@@ -134,39 +131,23 @@ export function CrmCompanyDropdown({
     }
   };
 
-  if (q.isPending) {
-    return (
-      <div
-        className={`flex items-center gap-2 text-sm text-zinc-500 ${className}`}
-      >
-        <span
-          className="inline-block size-4 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent"
-          aria-hidden
-        />
-        <span>Loading CRM companies…</span>
-      </div>
-    );
-  }
+  const selectValue =
+    options.some((o) => o.value === normalizedValue) ? normalizedValue : "";
 
   return (
-    <select
-      className={`${selectCls} ${className}`}
-      value={
-        options.some((o) => o.value === normalizedValue)
-          ? normalizedValue
-          : ""
-      }
-      onChange={(e) => handleChange(e.target.value)}
+    <SearchableSelect
+      value={selectValue || null}
+      onChange={handleChange}
+      options={options}
+      placeholder={placeholder}
       disabled={disabled}
-      aria-label={placeholder}
-    >
-      {isClearable ? <option value="">{placeholder}</option> : null}
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+      loading={q.isPending}
+      isClearable={isClearable}
+      className={className}
+      ariaLabel={placeholder}
+      loadingText="Loading CRM companies…"
+      emptyText="No companies found"
+    />
   );
 }
 

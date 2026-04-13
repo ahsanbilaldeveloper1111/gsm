@@ -98,7 +98,11 @@ export function createApiRoutes(base: string) {
         `${x}/${encodeURIComponent(String(id))}/product-pricing/bulk-update`,
       deleteProductPricing: (id: number | string, productId: number | string) =>
         `${x}/${encodeURIComponent(String(id))}/product-pricing/${encodeURIComponent(String(productId))}`,
+      /** GET list — same path segment as POST upload. */
       documents: (tenantId: number | string) =>
+        `${x}/${encodeURIComponent(String(tenantId))}/documents`,
+      /** POST multipart — same URL as {@link documents}. */
+      uploadDocument: (tenantId: number | string) =>
         `${x}/${encodeURIComponent(String(tenantId))}/documents`,
       deleteDocument: (
         tenantId: number | string,

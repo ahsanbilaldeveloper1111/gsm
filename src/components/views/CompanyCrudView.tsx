@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { CreateUpdateCompanyModal } from "@/components/company/CreateUpdateCompanyModal";
 import { CompanyImportModal } from "@/components/company/CompanyImportModal";
 import { CompanyListTable } from "@/components/company/CompanyListTable";
 import { DeleteConfirmationDialog } from "@/components/crud/DeleteConfirmationDialog";
-import { FormField, FormModal } from "@/components/crud/FormModal";
 import { ViewCompanyModal } from "@/components/company/ViewCompanyModal";
-import { useCompany } from "@/hooks/company/useCompany";
 import { useCompanyMutations } from "@/hooks/company/useCompanyMutations";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { usePermissions } from "@/hooks/permissions/usePermissions";
@@ -22,7 +21,6 @@ import {
 } from "@/lib/company/companyListUrl";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { companyProductPricingPath } from "@/lib/navigation/appPaths";
-import { unwrapApiSuccessData } from "@/lib/dashboard/unwrapAnalyticsPayload";
 import {
   showAppToast,
   showBillingBackendErrorToast,
@@ -164,67 +162,10 @@ export function CompanyCrudView() {
     [listQuery.data, deleteId],
   );
 
-  const editQuery = useCompany(editId, { load_profile: true });
-
-  const [username, setUsername] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [tenantId, setTenantId] = useState("");
-  const [vendorId, setVendorId] = useState("");
-
-  useEffect(() => {
-    if (!formOpen) return;
-    if (editId == null) {
-      setUsername("");
-      setName("");
-      setEmail("");
-      setPhone("");
-      setTenantId("");
-      setVendorId("");
-      return;
-    }
-    const raw = unwrapApiSuccessData<Record<string, unknown>>(editQuery.data);
-    if (!raw) return;
-    setUsername(String(raw.username ?? ""));
-    setName(String(raw.name ?? ""));
-    setEmail(String(raw.email ?? ""));
-    setPhone(String(raw.phone ?? raw.phone_no ?? ""));
-    setTenantId(raw.tenant_id != null ? String(raw.tenant_id) : "");
-    setVendorId(raw.vendor_id != null ? String(raw.vendor_id) : "");
-  }, [formOpen, editId, editQuery.data]);
-
   const openCreate = () => {
     setEditId(null);
     setFormOpen(true);
   };
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const body: Record<string, unknown> = {
-      username: username.trim(),
-      name: name.trim(),
-      email: email.trim() || undefined,
-      phone: phone.trim() || undefined,
-    };
-    if (tenantId.trim()) body.tenant_id = tenantId.trim();
-    if (vendorId.trim()) {
-      const n = Number.parseInt(vendorId, 10);
-      if (Number.isFinite(n)) body.vendor_id = n;
-    }
-    if (editId != null) {
-      const n = Number(editId);
-      if (Number.isFinite(n)) body.id = n;
-    }
-    try {
-      await mutations.createUpdate.mutateAsync(body);
-      showAppToast(editId == null ? "Company created." : "Company saved.", "success");
-      setFormOpen(false);
-      setEditId(null);
-    } catch (err) {
-      showBillingBackendErrorToast(err);
-    }
-  }
 
   async function confirmDelete() {
     if (deleteId == null) return;
@@ -529,64 +470,14 @@ export function CompanyCrudView() {
         }
       />
 
-      <FormModal
+      <CreateUpdateCompanyModal
         open={formOpen}
-        title={editId == null ? "New company" : "Edit company"}
+        companyId={editId}
         onClose={() => {
           setFormOpen(false);
           setEditId(null);
         }}
-        onSubmit={handleSubmit}
-        loading={mutations.createUpdate.isPending}
-      >
-        <FormField label="Username">
-          <input
-            required
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={username}
-            onChange={(ev) => setUsername(ev.target.value)}
-          />
-        </FormField>
-        <FormField label="Name">
-          <input
-            required
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={name}
-            onChange={(ev) => setName(ev.target.value)}
-          />
-        </FormField>
-        <FormField label="Email">
-          <input
-            type="email"
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
-          />
-        </FormField>
-        <FormField label="Phone">
-          <input
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={phone}
-            onChange={(ev) => setPhone(ev.target.value)}
-          />
-        </FormField>
-        <FormField label="Tenant ID">
-          <input
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={tenantId}
-            onChange={(ev) => setTenantId(ev.target.value)}
-            placeholder="Optional"
-          />
-        </FormField>
-        <FormField label="Vendor ID">
-          <input
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={vendorId}
-            onChange={(ev) => setVendorId(ev.target.value)}
-            placeholder="Optional numeric"
-          />
-        </FormField>
-      </FormModal>
+      />
 
       <DeleteConfirmationDialog
         show={deleteId != null && deleteId !== ""}

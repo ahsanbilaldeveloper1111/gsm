@@ -179,6 +179,50 @@ export interface CompanyBankAccount {
   updated_at?: string;
 }
 
+/**
+ * Flattened company + profile for CRM-style create/update (legacy `CompanyProfileForm`).
+ * API: root fields on `Company` plus nested `profile` on `POST /company/create-update`.
+ * `payment_methods` uses {@link CompanySavedPaymentMethod}, not the payment-rail string union in `@/models/Payment`.
+ */
+export interface CompanyProfileForm {
+  id?: number;
+  name: string;
+  email?: string;
+  phone?: string;
+  parent_id?: number;
+  country?: string;
+  tenant_id?: string | null;
+  vendor_id?: number;
+  currency: string;
+  address: string;
+  vat_rate: number;
+  vat_exemption: boolean;
+  tax_id?: string;
+  discount_type: "flat_percentage" | "flat_amount";
+  discount_limit?: number;
+  discount_applicability: string[];
+  payment_methods: CompanySavedPaymentMethod[];
+  payment_mode: PaymentMode;
+  credit_limit: number;
+  early_payment_discount?: number;
+  late_fee_rule?: number;
+  payment_terms: number;
+  outstanding_invoices: number;
+  discounts_applied_ytd: number;
+  vat_collected: number;
+  active_subscriptions: number;
+  last_refund_date?: string;
+  profile_status: "incomplete" | "complete" | "pending_verification";
+  selected_products?: unknown[];
+  fiscal_year_start?: string;
+  accounting_method?: string;
+  postal_code?: string;
+  registration_number?: string;
+  business_type?: string;
+  bank_accounts?: CompanyBankAccount[];
+  logo?: string | null;
+}
+
 /** Telephony / directory profile (distinct from billing `CompanyProfile`). */
 export interface Profile {
   id: number;

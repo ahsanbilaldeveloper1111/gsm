@@ -101,7 +101,7 @@ export const companyService = {
     apiGet<ApiSuccessResponse<unknown>>(r.documents(tenantId), params),
 
   uploadDocument: (tenantId: number | string, body: FormData) =>
-    apiPostForm<ApiSuccessResponse<unknown>>(r.documents(tenantId), body),
+    apiPostForm<ApiSuccessResponse<unknown>>(r.uploadDocument(tenantId), body),
 
   deleteDocument: (tenantId: number | string, documentId: number | string) =>
     apiDelete<ApiSuccessResponse<unknown>>(

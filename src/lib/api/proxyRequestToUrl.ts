@@ -161,10 +161,15 @@ function buildUpstreamHeaders(
   if (!bodyBuffer?.length) return headers;
   removeHeaderCaseInsensitive(headers, "content-type");
   removeHeaderCaseInsensitive(headers, "content-length");
+  const lower = incomingContentType.toLowerCase();
+  /** Must keep boundary — never coerce multipart or urlencoded bodies to JSON. */
   const ct =
-    incomingContentType && incomingContentType.toLowerCase().includes("application/json")
+    lower.includes("multipart/form-data") ||
+    lower.includes("application/x-www-form-urlencoded")
       ? incomingContentType
-      : "application/json; charset=utf-8";
+      : lower.includes("application/json") && incomingContentType.trim() !== ""
+        ? incomingContentType
+        : "application/json; charset=utf-8";
   headers["Content-Type"] = ct;
   headers["Content-Length"] = String(bodyBuffer.length);
   return headers;

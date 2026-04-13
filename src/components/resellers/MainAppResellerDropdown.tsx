@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { extractListRows } from "@/lib/api/extractApiData";
 import { useMainAppResellers } from "@/hooks/resellers/useMainAppResellers";
 import {
@@ -23,12 +24,9 @@ export type MainAppResellerDropdownProps = {
   isClearable?: boolean;
 };
 
-const selectCls =
-  "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900";
-
 /**
  * Dropdown that loads reseller/vendor rows from the main app (`GET /resellers/from-main-app`)
- * and selects by tenant identifier.
+ * and selects by tenant identifier (searchable Select2-style UI).
  */
 export function MainAppResellerDropdown({
   value,
@@ -64,8 +62,7 @@ export function MainAppResellerDropdown({
 
   const loading = q.isPending;
 
-  const handleChange = (raw: string) => {
-    const tenantId = raw === "" ? null : raw;
+  const handleChange = (tenantId: string | null) => {
     onChange(tenantId);
     if (onSelectReseller) {
       const reseller =
@@ -77,37 +74,20 @@ export function MainAppResellerDropdown({
     }
   };
 
-  if (loading) {
-    return (
-      <div
-        className={`flex items-center gap-2 text-sm text-zinc-500 ${className}`}
-      >
-        <span
-          className="inline-block size-4 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent"
-          aria-hidden
-        />
-        <span>Loading vendors…</span>
-      </div>
-    );
-  }
-
   return (
-    <select
-      className={`${selectCls} ${className}`}
-      value={value ?? ""}
-      onChange={(e) => handleChange(e.target.value)}
+    <SearchableSelect
+      value={value ?? null}
+      onChange={handleChange}
+      options={options}
+      placeholder={placeholder}
       disabled={disabled}
-      aria-label={placeholder}
-    >
-      {isClearable ? (
-        <option value="">{placeholder}</option>
-      ) : null}
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+      loading={loading}
+      isClearable={isClearable}
+      className={className}
+      ariaLabel={placeholder}
+      loadingText="Loading vendors…"
+      emptyText="No vendors found"
+    />
   );
 }
 

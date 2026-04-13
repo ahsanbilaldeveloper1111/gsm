@@ -203,6 +203,12 @@ export const queryKeys = {
       tenantId: number | string | null,
     ) =>
       [...queryKeys.products.all, "pricing", productId, tenantId] as const,
+    /** `GET /products/with-company-pricing?tenant_id=` */
+    withCompanyPricing: (tenantId: string | null) =>
+      [...queryKeys.products.all, "withCompanyPricing", tenantId] as const,
+    /** `GET /products/with-customer-pricing?crm_company_id=` (or customer id — see hook) */
+    withCustomerPricing: (crmOrCustomerKey: string | null) =>
+      [...queryKeys.products.all, "withCustomerPricing", crmOrCustomerKey] as const,
   },
   productCategories: {
     all: ["productCategories"] as const,

@@ -3,12 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { DeleteConfirmationDialog } from "@/components/crud/DeleteConfirmationDialog";
-import { FormField, FormModal } from "@/components/crud/FormModal";
+import { CreateUpdateInvoiceModal } from "@/components/invoices/CreateUpdateInvoiceModal";
 import { InvoiceDetailModal } from "@/components/invoices/InvoiceDetailModal";
 import { InvoiceListTable } from "@/components/invoices/InvoiceListTable";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useCustomers } from "@/hooks/customers/useCustomers";
-import { useInvoiceDetails } from "@/hooks/invoices/useInvoiceDetails";
 import { useInvoiceMutations } from "@/hooks/invoices/useInvoiceMutations";
 import { useInvoices } from "@/hooks/invoices/useInvoices";
 import { usePermissions } from "@/hooks/permissions/usePermissions";
@@ -22,53 +21,12 @@ import {
   type InvoiceListUrlState,
 } from "@/lib/invoices/invoiceListUrl";
 import { resolveDeleteItemLabel } from "@/lib/crud/resolveDeleteItemLabel";
-import { unwrapApiSuccessData } from "@/lib/dashboard/unwrapAnalyticsPayload";
 import {
   showAppToast,
   showBillingBackendErrorToast,
 } from "@/lib/toast/appToast";
-import type {
-  CreateInvoiceData,
-  CreateInvoiceItemData,
-  IndexInvoiceParams,
-  Invoice,
-  InvoiceStatus,
-  UpdateInvoiceData,
-} from "@/models/Invoice";
+import type { IndexInvoiceParams, InvoiceStatus } from "@/models/Invoice";
 import type { Customer } from "@/models/Customer";
-import type { PaymentMode } from "@/models/Payment";
-
-function defaultInvoiceDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function defaultDueDate(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 14);
-  return d.toISOString().slice(0, 10);
-}
-
-const defaultItemsJson =
-  '[\n  { "quantity": 1, "unit_price": 0, "vat_rate": 0 }\n]';
-
-function lineItemsSubtotal(items: CreateInvoiceItemData[]): number {
-  return items.reduce((a, i) => a + i.quantity * i.unit_price, 0);
-}
-
-/** Map `vat_rate` / `tax_rate` for validators that expect either name. */
-function normalizeLineItems(
-  items: CreateInvoiceItemData[],
-): CreateInvoiceItemData[] {
-  return items.map((it) => {
-    const vat = it.vat_rate;
-    const tax = it.tax_rate;
-    return {
-      ...it,
-      tax_rate: tax ?? vat,
-      vat_rate: vat ?? tax,
-    };
-  });
-}
 
 const INVOICE_STATUS_OPTIONS: InvoiceStatus[] = [
   "draft",
@@ -299,7 +257,7 @@ export function InvoiceCrudView() {
   const mutations = useInvoiceMutations();
   const [detailId, setDetailId] = useState<number | string | null>(null);
   const [editId, setEditId] = useState<number | string | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
+  const [invoiceFormOpen, setInvoiceFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | string | null>(null);
 
   const deleteItemLabel = useMemo(
@@ -309,8 +267,6 @@ export function InvoiceCrudView() {
       }),
     [listQuery.data, deleteId],
   );
-
-  const editQuery = useInvoiceDetails(editId);
 
   const tenantDisplayNameById = useMemo(() => {
     const o: Record<string, string> = {};
@@ -326,196 +282,10 @@ export function InvoiceCrudView() {
     return o;
   }, [companyRows]);
 
-  const [tenantId, setTenantId] = useState("");
-  const [vendorId, setVendorId] = useState("");
-  const [crmCompanyId, setCrmCompanyId] = useState("");
-  const [poNumber, setPoNumber] = useState("");
-  const [invoiceDate, setInvoiceDate] = useState(defaultInvoiceDate());
-  const [dueDate, setDueDate] = useState(defaultDueDate());
-  const [endDate, setEndDate] = useState("");
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>("one_time");
-  const [currencyCode, setCurrencyCode] = useState("USD");
-  const [exchangeRate, setExchangeRate] = useState("");
-  const [subtotalStr, setSubtotalStr] = useState("");
-  const [taxAmountStr, setTaxAmountStr] = useState("");
-  const [totalAmountStr, setTotalAmountStr] = useState("");
-  const [notes, setNotes] = useState("");
-  const [terms, setTerms] = useState("");
-  const [itemsJson, setItemsJson] = useState(defaultItemsJson);
-
-  useEffect(() => {
-    if (!formOpen) return;
-    if (editId == null) {
-      setTenantId("");
-      setVendorId("");
-      setCrmCompanyId("");
-      setPoNumber("");
-      setInvoiceDate(defaultInvoiceDate());
-      setDueDate(defaultDueDate());
-      setEndDate("");
-      setPaymentMode("one_time");
-      setCurrencyCode("USD");
-      setExchangeRate("");
-      setSubtotalStr("");
-      setTaxAmountStr("");
-      setTotalAmountStr("");
-      setNotes("");
-      setTerms("");
-      setItemsJson(defaultItemsJson);
-      return;
-    }
-    const inv = unwrapApiSuccessData<Invoice>(editQuery.data);
-    if (!inv) return;
-    setTenantId(inv.tenant_id ?? "");
-    setVendorId(inv.vendor_id != null ? String(inv.vendor_id) : "");
-    setCrmCompanyId(inv.crm_company_id ?? "");
-    setPoNumber(inv.po_number ?? "");
-    setInvoiceDate(inv.invoice_date?.slice(0, 10) ?? "");
-    setDueDate(inv.due_date?.slice(0, 10) ?? "");
-    setEndDate(inv.end_date?.slice(0, 10) ?? "");
-    setPaymentMode(inv.payment_mode);
-    setCurrencyCode(inv.currency_code);
-    setExchangeRate(
-      inv.exchange_rate != null ? String(inv.exchange_rate) : "",
-    );
-    setSubtotalStr(String(inv.subtotal ?? ""));
-    setTaxAmountStr(String(inv.tax_amount ?? ""));
-    setTotalAmountStr(String(inv.total_amount ?? ""));
-    setNotes(inv.notes ?? "");
-    setTerms(inv.terms_conditions ?? "");
-    const lines: CreateInvoiceItemData[] = (inv.items ?? []).map((it) => ({
-      product_id: it.product_id,
-      quantity: it.quantity,
-      unit_price: it.unit_price,
-      vat_rate: it.tax_rate,
-      tax_rate: it.tax_rate,
-    }));
-    setItemsJson(
-      lines.length > 0
-        ? JSON.stringify(lines, null, 2)
-        : defaultItemsJson,
-    );
-  }, [formOpen, editId, editQuery.data]);
-
   const openCreate = () => {
     setEditId(null);
-    setFormOpen(true);
+    setInvoiceFormOpen(true);
   };
-
-  function parseItems(): CreateInvoiceItemData[] | null {
-    try {
-      const raw = JSON.parse(itemsJson) as unknown;
-      if (!Array.isArray(raw) || raw.length === 0) {
-        showAppToast("Items must be a non-empty JSON array.", "error");
-        return null;
-      }
-      return raw as CreateInvoiceItemData[];
-    } catch {
-      showAppToast("Invalid items JSON.", "error");
-      return null;
-    }
-  }
-
-  function resolveAmounts(
-    items: CreateInvoiceItemData[],
-  ): { subtotal: number; tax_amount?: number; total_amount: number } {
-    const fromLines = lineItemsSubtotal(items);
-    let subtotal = Number.parseFloat(subtotalStr);
-    if (!Number.isFinite(subtotal) || subtotal < 0) subtotal = fromLines;
-
-    let tax: number | undefined;
-    if (taxAmountStr.trim() !== "") {
-      const t = Number.parseFloat(taxAmountStr);
-      tax = Number.isFinite(t) && t >= 0 ? t : undefined;
-    }
-
-    let total = Number.parseFloat(totalAmountStr);
-    if (!Number.isFinite(total) || total < 0) {
-      total = subtotal + (tax ?? 0);
-    }
-    return { subtotal, tax_amount: tax, total_amount: total };
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (editId == null && !tenantId.trim()) {
-      showAppToast("Tenant ID is required (must match a company tenant).", "error");
-      return;
-    }
-
-    const rawItems = parseItems();
-    if (!rawItems) return;
-    const items = normalizeLineItems(rawItems);
-
-    const exchangeParsed = exchangeRate.trim()
-      ? Number.parseFloat(exchangeRate)
-      : undefined;
-
-    const { subtotal, tax_amount, total_amount } = resolveAmounts(items);
-
-    const vendorParsed = vendorId.trim()
-      ? Number.parseInt(vendorId, 10)
-      : undefined;
-    const vendor_id =
-      vendorParsed !== undefined && Number.isFinite(vendorParsed)
-        ? vendorParsed
-        : null;
-
-    try {
-      if (editId == null) {
-        const body: CreateInvoiceData = {
-          tenant_id: tenantId.trim(),
-          vendor_id,
-          crm_company_id: crmCompanyId.trim() || null,
-          po_number: poNumber.trim() || null,
-          invoice_date: invoiceDate,
-          due_date: dueDate,
-          end_date: endDate.trim() || undefined,
-          payment_mode: paymentMode,
-          subtotal,
-          total_amount,
-          tax_amount,
-          currency_code: currencyCode.trim(),
-          exchange_rate:
-            exchangeParsed !== undefined && Number.isFinite(exchangeParsed)
-              ? exchangeParsed
-              : undefined,
-          notes: notes.trim() || undefined,
-          terms_conditions: terms.trim() || undefined,
-          items,
-        };
-        await mutations.create.mutateAsync(body);
-        showAppToast("Invoice created.", "success");
-      } else {
-        const body: UpdateInvoiceData = {
-          tenant_id: tenantId.trim() || null,
-          vendor_id,
-          po_number: poNumber.trim() || null,
-          invoice_date: invoiceDate,
-          due_date: dueDate,
-          end_date: endDate.trim() || undefined,
-          payment_mode: paymentMode,
-          subtotal,
-          total_amount,
-          tax_amount,
-          currency_code: currencyCode.trim(),
-          exchange_rate:
-            exchangeParsed !== undefined && Number.isFinite(exchangeParsed)
-              ? exchangeParsed
-              : undefined,
-          notes: notes.trim() || undefined,
-          terms_conditions: terms.trim() || undefined,
-          items,
-        };
-        await mutations.update.mutateAsync({ id: editId, body });
-        showAppToast("Invoice updated.", "success");
-      }
-      setFormOpen(false);
-      setEditId(null);
-    } catch (err) {
-      showBillingBackendErrorToast(err);
-    }
-  }
 
   async function confirmDelete() {
     if (deleteId == null) return;
@@ -871,7 +641,7 @@ export function InvoiceCrudView() {
         onView={(id) => setDetailId(id)}
         onEdit={(id) => {
           setEditId(id);
-          setFormOpen(true);
+          setInvoiceFormOpen(true);
         }}
         onDelete={(id) => setDeleteId(id)}
       />
@@ -884,176 +654,18 @@ export function InvoiceCrudView() {
         onEdit={(inv) => {
           setDetailId(null);
           setEditId(inv.id);
-          setFormOpen(true);
+          setInvoiceFormOpen(true);
         }}
       />
 
-      <FormModal
-        open={formOpen}
-        title={editId == null ? "New invoice" : "Edit invoice"}
+      <CreateUpdateInvoiceModal
+        open={invoiceFormOpen}
+        invoiceId={editId}
         onClose={() => {
-          setFormOpen(false);
+          setInvoiceFormOpen(false);
           setEditId(null);
         }}
-        onSubmit={handleSubmit}
-        loading={mutations.create.isPending || mutations.update.isPending}
-      >
-        <FormField label="Tenant ID">
-          <input
-            required={editId == null}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={tenantId}
-            onChange={(ev) => setTenantId(ev.target.value)}
-            placeholder="Required on create — company tenant_id"
-          />
-        </FormField>
-        <FormField label="Vendor ID">
-          <input
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={vendorId}
-            onChange={(ev) => setVendorId(ev.target.value)}
-            placeholder="Optional"
-          />
-        </FormField>
-        <FormField label="CRM company ID">
-          <input
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={crmCompanyId}
-            onChange={(ev) => setCrmCompanyId(ev.target.value)}
-            placeholder="Optional"
-          />
-        </FormField>
-        <FormField label="PO number">
-          <input
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={poNumber}
-            onChange={(ev) => setPoNumber(ev.target.value)}
-            placeholder="Optional"
-          />
-        </FormField>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <FormField label="Invoice date">
-            <input
-              type="date"
-              required
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={invoiceDate}
-              onChange={(ev) => setInvoiceDate(ev.target.value)}
-            />
-          </FormField>
-          <FormField label="Due date">
-            <input
-              type="date"
-              required
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={dueDate}
-              onChange={(ev) => setDueDate(ev.target.value)}
-            />
-          </FormField>
-        </div>
-        <FormField label="End date">
-          <input
-            type="date"
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={endDate}
-            onChange={(ev) => setEndDate(ev.target.value)}
-            placeholder="Optional (recurring)"
-          />
-        </FormField>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <FormField label="Payment mode">
-            <select
-              required
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={paymentMode}
-              onChange={(ev) =>
-                setPaymentMode(ev.target.value as PaymentMode)
-              }
-            >
-              <option value="one_time">one_time</option>
-              <option value="recurring">recurring</option>
-              <option value="subscription">subscription</option>
-            </select>
-          </FormField>
-          <FormField label="Currency code">
-            <input
-              required
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={currencyCode}
-              onChange={(ev) => setCurrencyCode(ev.target.value.toUpperCase())}
-              placeholder="USD"
-            />
-          </FormField>
-        </div>
-        <FormField label="Exchange rate">
-          <input
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={exchangeRate}
-            onChange={(ev) => setExchangeRate(ev.target.value)}
-            placeholder="Optional"
-          />
-        </FormField>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <FormField label="Subtotal">
-            <input
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={subtotalStr}
-              onChange={(ev) => setSubtotalStr(ev.target.value)}
-              placeholder="Blank = sum of line items"
-              inputMode="decimal"
-            />
-          </FormField>
-          <FormField label="Tax amount">
-            <input
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={taxAmountStr}
-              onChange={(ev) => setTaxAmountStr(ev.target.value)}
-              placeholder="Optional"
-              inputMode="decimal"
-            />
-          </FormField>
-          <FormField label="Total amount">
-            <input
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={totalAmountStr}
-              onChange={(ev) => setTotalAmountStr(ev.target.value)}
-              placeholder="Blank = subtotal + tax"
-              inputMode="decimal"
-            />
-          </FormField>
-        </div>
-        <FormField label="Notes">
-          <textarea
-            className="min-h-[72px] w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={notes}
-            onChange={(ev) => setNotes(ev.target.value)}
-          />
-        </FormField>
-        <FormField label="Terms & conditions">
-          <textarea
-            className="min-h-[72px] w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={terms}
-            onChange={(ev) => setTerms(ev.target.value)}
-          />
-        </FormField>
-        <FormField label="Items (JSON array)">
-          <textarea
-            required
-            spellCheck={false}
-            className="min-h-[140px] w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 font-mono text-xs dark:border-zinc-700 dark:bg-zinc-900"
-            value={itemsJson}
-            onChange={(ev) => setItemsJson(ev.target.value)}
-          />
-          <p className="mt-1 text-[11px] text-zinc-500">
-            Each line: <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">quantity</code>,{" "}
-            <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">unit_price</code>, optional{" "}
-            <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">product_id</code>,{" "}
-            <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">vat_rate</code> /{" "}
-            <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">tax_rate</code>,{" "}
-            <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">description</code>.
-          </p>
-        </FormField>
-      </FormModal>
+      />
 
       <DeleteConfirmationDialog
         show={deleteId != null}

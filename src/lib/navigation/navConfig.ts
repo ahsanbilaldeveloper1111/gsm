@@ -18,19 +18,10 @@ export const navigationGroups: NavGroup[] = [
     items: [{ label: "Dashboard", href: appPaths.dashboard }],
   },
   {
-    title: "People & access",
-    items: [
-      { label: "Users", href: appPaths.users },
-      { label: "Ranks", href: appPaths.ranks },
-      { label: "Audit logs", href: appPaths.auditLogs },
-    ],
-  },
-  {
     title: "Organizations",
     items: [
-      { label: "Company", href: appPaths.company },
-      { label: "CRM companies", href: appPaths.crm },
       { label: "Vendors", href: appPaths.vendors },
+      { label: "Company", href: appPaths.company },
       { label: "Customers", href: appPaths.customers },
     ],
   },
@@ -50,6 +41,14 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: "Products", href: appPaths.products },
       { label: "Product categories", href: appPaths.productCategories },
+    ],
+  },
+  {
+    title: "People & access",
+    items: [
+      { label: "Users", href: appPaths.users },
+      { label: "Ranks", href: appPaths.ranks },
+      { label: "Audit logs", href: appPaths.auditLogs },
     ],
   },
   {
