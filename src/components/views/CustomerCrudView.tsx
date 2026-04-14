@@ -16,6 +16,7 @@ import { useCustomers } from "@/hooks/customers/useCustomers";
 import { usePermissions } from "@/hooks/permissions/usePermissions";
 import { useVendors } from "@/hooks/vendors/useVendors";
 import { extractListRows } from "@/lib/api/extractApiData";
+import { customerApiResourceKey } from "@/lib/customers/customerApiResourceKey";
 import {
   buildCustomerListSearchParams,
   parseCustomerListSearchParams,
@@ -31,12 +32,6 @@ import type { Company, IndexCompanyParams } from "@/models/Company";
 import type { Customer, IndexCustomerParams } from "@/models/Customer";
 
 const LIMIT_OPTIONS = [10, 20, 25, 50, 100] as const;
-
-function customerRowKey(c: Customer): string | number {
-  const crm = c.crm_company_id;
-  if (crm != null && String(crm).trim() !== "") return String(crm).trim();
-  return c.id;
-}
 
 function productPricingUrl(customerKey: string | number): string {
   if (typeof window === "undefined") return "#";
@@ -237,7 +232,7 @@ export function CustomerCrudView() {
   }
 
   function openProductPricing(c: Customer) {
-    const key = customerRowKey(c);
+    const key = customerApiResourceKey(c);
     if (key == null || key === "") {
       showAppToast("No customer id for pricing link.", "warning");
       return;
@@ -409,13 +404,13 @@ export function CustomerCrudView() {
         canDelete
         onCreate={openCreate}
         onView={(c) =>
-          setViewCustomerId(String(customerRowKey(c)))
+          setViewCustomerId(String(customerApiResourceKey(c)))
         }
         onEdit={(c) => {
-          setEditId(customerRowKey(c));
+          setEditId(customerApiResourceKey(c));
           setFormOpen(true);
         }}
-        onDelete={(c) => setDeleteId(customerRowKey(c))}
+        onDelete={(c) => setDeleteId(customerApiResourceKey(c))}
         onProductPricing={openProductPricing}
       />
 
@@ -424,7 +419,7 @@ export function CustomerCrudView() {
         onHide={() => setViewCustomerId(null)}
         customerId={viewCustomerId}
         onEdit={(customer) => {
-          setEditId(customerRowKey(customer));
+          setEditId(customerApiResourceKey(customer));
           setFormOpen(true);
         }}
       />

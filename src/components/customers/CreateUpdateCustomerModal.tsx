@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { CustomerPaymentCardsEditor } from "@/components/customers/CustomerPaymentCardsEditor";
+import { CustomerSavedCardsInlineSummary } from "@/components/customers/CustomerSavedCardsInlineSummary";
 import { TenantSearchableDropdown } from "@/components/ui/TenantSearchableDropdown";
 import { useCrmCompanies } from "@/hooks/crm/useCrmCompanies";
 import { useCustomer } from "@/hooks/customers/useCustomer";
@@ -19,6 +20,8 @@ import {
   showBillingBackendErrorToast,
 } from "@/lib/toast/appToast";
 import type { Company } from "@/models/Company";
+import { customerApiResourceKey } from "@/lib/customers/customerApiResourceKey";
+import { customerStripeCrmId } from "@/lib/customers/customerStripeCrmId";
 import type { CreateCustomerData, Customer, CustomerProfile } from "@/models/Customer";
 
 const inputClass =
@@ -246,15 +249,23 @@ export function CreateUpdateCustomerModal({
     }));
   };
 
-  const crmCompanyIdForSubmit =
-    isEdit && currentCustomer?.crm_company_id
-      ? String(currentCustomer.crm_company_id).trim()
-      : formData.crm_company_id?.trim() || null;
+  const crmCompanyIdForSubmit = useMemo(() => {
+    if (!isEdit) {
+      return formData.crm_company_id?.trim() || null;
+    }
+    if (!currentCustomer) return null;
+    const fromForm = formData.crm_company_id?.trim();
+    if (fromForm) return fromForm;
+    return String(customerApiResourceKey(currentCustomer));
+  }, [isEdit, currentCustomer, formData.crm_company_id]);
 
-  const crmCompanyIdForCards =
-    isEdit && (currentCustomer?.crm_company_id ?? formData.crm_company_id)
-      ? String(currentCustomer?.crm_company_id ?? formData.crm_company_id).trim()
-      : null;
+  const stripeCrmId = useMemo(
+    () =>
+      isEdit && currentCustomer
+        ? customerStripeCrmId(currentCustomer)
+        : null,
+    [isEdit, currentCustomer],
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -276,7 +287,7 @@ export function CreateUpdateCustomerModal({
     const payload = buildCustomerPayload(formData, crmCompanyIdForSubmit);
     try {
       if (isEdit && currentCustomer) {
-        const id = currentCustomer.crm_company_id ?? currentCustomer.id;
+        const id = customerApiResourceKey(currentCustomer);
         await mutations.update.mutateAsync({ id, body: payload });
         showAppToast("Customer updated.", "success");
       } else {
@@ -516,6 +527,16 @@ export function CreateUpdateCustomerModal({
                           ))}
                         </select>
                       )}
+                      {isEdit && stripeCrmId ? (
+                        <div className="mt-3 border-t border-zinc-200/70 pt-3 dark:border-zinc-700">
+                          <p className="mb-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                            Saved payment cards (Stripe)
+                          </p>
+                          <CustomerSavedCardsInlineSummary
+                            crmCompanyId={stripeCrmId}
+                          />
+                        </div>
+                      ) : null}
                     </div>
                     <div>
                       <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
@@ -710,9 +731,9 @@ export function CreateUpdateCustomerModal({
                   </div>
                 </Section>
 
-                {isEdit && crmCompanyIdForCards ? (
+                {isEdit && stripeCrmId ? (
                   <CustomerPaymentCardsEditor
-                    crmCompanyId={crmCompanyIdForCards}
+                    crmCompanyId={stripeCrmId}
                     customerName={currentCustomer?.name ?? ""}
                     active={open}
                   />

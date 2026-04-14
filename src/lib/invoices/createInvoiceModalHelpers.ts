@@ -132,15 +132,17 @@ export function addDaysISODate(base: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Net payment terms are expected in **days** (e.g. 30 = Net 30). Values above this are treated as bad data. */
+const MAX_NET_PAYMENT_DAYS = 3650; // 10 years — anything larger breaks `Date` math sensibly
+
 export function defaultDueDateFromPaymentTerms(
   invoiceDate: string,
   paymentTermsDays: number | null | undefined,
 ): string {
+  const raw = Number(paymentTermsDays);
   const days =
-    paymentTermsDays != null &&
-    Number.isFinite(Number(paymentTermsDays)) &&
-    Number(paymentTermsDays) > 0
-      ? Number(paymentTermsDays)
+    Number.isFinite(raw) && raw > 0 && raw <= MAX_NET_PAYMENT_DAYS
+      ? Math.floor(raw)
       : 30;
   return addDaysISODate(invoiceDate || todayISODate(), days);
 }

@@ -43,6 +43,7 @@ import {
   toCreateInvoiceItems,
 } from "@/lib/invoices/createInvoiceModalHelpers";
 import { unwrapApiSuccessData } from "@/lib/dashboard/unwrapAnalyticsPayload";
+import { customerApiResourceKey } from "@/lib/customers/customerApiResourceKey";
 import { formatCurrency } from "@/lib/currency";
 import {
   showAppToast,
@@ -140,9 +141,6 @@ export function CreateUpdateInvoiceModal({
   const [form, setForm] = useState<FormState>(() => defaultFormState());
   const [items, setItems] = useState<InvoiceLineFormRow[]>([emptyLine()]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedCustomerDbId, setSelectedCustomerDbId] = useState<
-    number | null
-  >(null);
   const [loadingPrevious, setLoadingPrevious] = useState(false);
 
   const vendorNum = selectedVendorId
@@ -170,12 +168,23 @@ export function CreateUpdateInvoiceModal({
   const customerRows = extractListRows(customersQuery.data)
     .rows as unknown as Customer[];
 
-  const customerDetailQuery = useCustomer(
-    selectedCustomerDbId != null && selectedCustomerDbId > 0
-      ? selectedCustomerDbId
-      : null,
-    { load_profile: true },
-  );
+  const crmTrim = form.crm_company_id.trim();
+
+  /** Same key as GET `/customers/{key}` — CRM id when present, not the numeric list row id. */
+  const customerDetailFetchKey = useMemo((): string | number | null => {
+    if (!open || !isSuperAdmin || !crmTrim) return null;
+    const matched = customerRows.find(
+      (c) => String(c.crm_company_id ?? "").trim() === crmTrim,
+    );
+    if (matched) {
+      return customerApiResourceKey(matched);
+    }
+    return crmTrim;
+  }, [open, isSuperAdmin, crmTrim, customerRows]);
+
+  const customerDetailQuery = useCustomer(customerDetailFetchKey, {
+    load_profile: true,
+  });
   const customerLoaded = unwrapApiSuccessData<Customer>(customerDetailQuery.data);
 
   const activeCurrenciesQ = useActiveCurrencies();
@@ -199,7 +208,6 @@ export function CreateUpdateInvoiceModal({
   );
   const companyPriced = normalizePricedProductsResponse(companyPricingQ.data);
 
-  const crmTrim = form.crm_company_id.trim();
   const customerPricingQ = useProductsWithCustomerPricing(
     isSuperAdmin && crmTrim ? crmTrim : null,
   );
@@ -259,7 +267,6 @@ export function CreateUpdateInvoiceModal({
     if (!open) return;
     if (!isSuperAdmin) {
       setForm((p) => ({ ...p, crm_company_id: "" }));
-      setSelectedCustomerDbId(null);
     }
   }, [open, isSuperAdmin]);
 
@@ -287,34 +294,63 @@ export function CreateUpdateInvoiceModal({
       });
       const lines = mapInvoiceItemsToFormRows(inv.items);
       setItems(lines.length > 0 ? lines : [emptyLine()]);
-      if (inv.customer?.id != null) {
-        setSelectedCustomerDbId(inv.customer.id);
-      } else {
-        setSelectedCustomerDbId(null);
-      }
       setErrors({});
       return;
     }
     setSelectedVendorId(null);
     setForm(defaultFormState());
     setItems([emptyLine()]);
-    setSelectedCustomerDbId(null);
     setErrors({});
   }, [open, isEdit, invoiceId, detailQuery.data]);
 
+  /** Create mode: currency from customer profile when CRM customer selected, else company (tenant) profile. */
   useEffect(() => {
-    if (isEdit || !form.tenant_id.trim() || !selectedCompany?.profile) return;
+    if (isEdit) return;
+    if (hasCustomer) {
+      if (!customerLoaded?.profile) return;
+      const p = customerLoaded.profile;
+      const custCur = p.currency != null && String(p.currency).trim() !== ""
+        ? String(p.currency).trim()
+        : "";
+      const coCur =
+        selectedCompany?.profile?.currency != null &&
+        String(selectedCompany.profile.currency).trim() !== ""
+          ? String(selectedCompany.profile.currency).trim()
+          : "";
+      const nextCode = (custCur || coCur || "USD").toUpperCase();
+      const pt = p.payment_terms;
+      setForm((prev) => ({
+        ...prev,
+        currency_code: nextCode,
+        due_date: defaultDueDateFromPaymentTerms(
+          prev.invoice_date,
+          pt == null ? undefined : Number(pt),
+        ),
+      }));
+      return;
+    }
+    if (!form.tenant_id.trim() || !selectedCompany?.profile) return;
     const cur = selectedCompany.profile.currency;
     const pt = selectedCompany.profile.payment_terms;
     setForm((prev) => ({
       ...prev,
-      currency_code: (cur && String(cur).trim()) || prev.currency_code || "USD",
+      currency_code: (
+        (cur && String(cur).trim()) ||
+        prev.currency_code ||
+        "USD"
+      ).toUpperCase(),
       due_date: defaultDueDateFromPaymentTerms(
         prev.invoice_date,
         pt == null ? undefined : Number(pt),
       ),
     }));
-  }, [isEdit, form.tenant_id, selectedCompany]);
+  }, [
+    isEdit,
+    hasCustomer,
+    customerLoaded,
+    form.tenant_id,
+    selectedCompany,
+  ]);
 
   useEffect(() => {
     const code = form.currency_code || "USD";
@@ -519,7 +555,7 @@ export function CreateUpdateInvoiceModal({
           subtotal: totals.subtotal,
           tax_amount: totals.taxAmount,
           total_amount: totals.total,
-          currency_code: form.currency_code.trim() || "USD",
+          currency_code: (form.currency_code.trim() || "USD").toUpperCase(),
           exchange_rate: form.exchange_rate,
           notes: form.notes.trim() || undefined,
           terms_conditions: form.terms_conditions.trim() || undefined,
@@ -543,7 +579,7 @@ export function CreateUpdateInvoiceModal({
           subtotal: totals.subtotal,
           tax_amount: totals.taxAmount,
           total_amount: totals.total,
-          currency_code: form.currency_code.trim() || "USD",
+          currency_code: (form.currency_code.trim() || "USD").toUpperCase(),
           exchange_rate: form.exchange_rate,
           notes: form.notes.trim() || undefined,
           terms_conditions: form.terms_conditions.trim() || undefined,
@@ -568,7 +604,33 @@ export function CreateUpdateInvoiceModal({
     baseCurrency?.code ??
     currencies.find((c) => c?.is_base_currency || c?.is_base)?.code ??
     "USD";
-  const displayCurrency = form.currency_code || "USD";
+  const displayCurrency = (form.currency_code || "USD").toUpperCase();
+
+  const currencySourceHint = useMemo(() => {
+    if (isEdit) return null;
+    if (hasCustomer) {
+      if (customerDetailQuery.isPending || !customerLoaded?.profile) {
+        return "Loading customer profile…";
+      }
+      const c = customerLoaded.profile.currency?.trim();
+      if (c) return `Set from customer profile (${c.toUpperCase()}).`;
+      if (selectedCompany?.profile?.currency?.trim()) {
+        return `Customer has no currency; using company profile (${String(selectedCompany.profile.currency).trim().toUpperCase()}).`;
+      }
+      return "Customer has no currency; using default USD.";
+    }
+    if (form.tenant_id.trim() && selectedCompany?.profile?.currency?.trim()) {
+      return `Set from company profile (${String(selectedCompany.profile.currency).trim().toUpperCase()}).`;
+    }
+    return "Select a company (and optionally a customer) to set currency.";
+  }, [
+    isEdit,
+    hasCustomer,
+    customerDetailQuery.isPending,
+    customerLoaded,
+    form.tenant_id,
+    selectedCompany?.profile?.currency,
+  ]);
 
   if (!open) return null;
 
@@ -637,7 +699,6 @@ export function CreateUpdateInvoiceModal({
                             tenant_id: "",
                             crm_company_id: "",
                           }));
-                          setSelectedCustomerDbId(null);
                         }}
                       >
                         <option value="">Select vendor…</option>
@@ -679,7 +740,6 @@ export function CreateUpdateInvoiceModal({
                             tenant_id: tenant_id ?? "",
                             crm_company_id: "",
                           }));
-                          setSelectedCustomerDbId(null);
                         }}
                         isClearable
                       />
@@ -707,17 +767,6 @@ export function CreateUpdateInvoiceModal({
                           onChange={(crmCompanyId) => {
                             const nextCrmId = crmCompanyId ?? "";
                             setForm((f) => ({ ...f, crm_company_id: nextCrmId }));
-                            if (!nextCrmId) {
-                              setSelectedCustomerDbId(null);
-                              return;
-                            }
-                            const matched = customerRows.find(
-                              (c) =>
-                                String(c.crm_company_id ?? "").trim() === nextCrmId,
-                            );
-                            setSelectedCustomerDbId(
-                              matched?.id != null ? Number(matched.id) : null,
-                            );
                           }}
                           placeholder={
                             form.tenant_id.trim()
@@ -841,6 +890,11 @@ export function CreateUpdateInvoiceModal({
                         readOnly
                         value={displayCurrency}
                       />
+                      {currencySourceHint ? (
+                        <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-400">
+                          {currencySourceHint}
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-[11px] text-zinc-500">
                         Exchange rate: 1 {baseCode} ={" "}
                         {Number(form.exchange_rate ?? 1).toFixed(6)}{" "}

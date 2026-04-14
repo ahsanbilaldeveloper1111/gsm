@@ -4,9 +4,12 @@ import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { CustomerPaymentCardsEditor } from "@/components/customers/CustomerPaymentCardsEditor";
+import { CustomerSavedCardsInlineSummary } from "@/components/customers/CustomerSavedCardsInlineSummary";
 import { useCrmCompanyNameMap } from "@/hooks/crm/useCrmCompanyNameMap";
 import { useCustomer } from "@/hooks/customers/useCustomer";
 import { useTenantDisplayNameMap } from "@/hooks/company/useTenantDisplayNameMap";
+import { customerApiResourceKey } from "@/lib/customers/customerApiResourceKey";
+import { customerStripeCrmId } from "@/lib/customers/customerStripeCrmId";
 import { unwrapApiSuccessData } from "@/lib/dashboard/unwrapAnalyticsPayload";
 import { customerProductPricingPath } from "@/lib/navigation/appPaths";
 import type { Customer } from "@/models/Customer";
@@ -81,11 +84,7 @@ export function ViewCustomerModal({
   const isLoading = detailQuery.isPending && show && customerId != null;
   const loadError = detailQuery.isError ? detailQuery.error : null;
 
-  const crmCompanyId =
-    customer?.crm_company_id != null &&
-    String(customer.crm_company_id).trim() !== ""
-      ? String(customer.crm_company_id).trim()
-      : null;
+  const stripeCrmId = customer ? customerStripeCrmId(customer) : null;
 
   const companyName = useMemo(() => {
     if (!customer?.tenant_id) return "—";
@@ -100,13 +99,9 @@ export function ViewCustomerModal({
   }, [customer?.crm_company_id, crmCompanyNameMap]);
 
   const profile = customer?.profile;
-  const pricingHref =
-    customer &&
-    (customer.crm_company_id != null || customer.id != null)
-      ? customerProductPricingPath(
-          String(customer.crm_company_id ?? customer.id),
-        )
-      : null;
+  const pricingHref = customer
+    ? customerProductPricingPath(String(customerApiResourceKey(customer)))
+    : null;
 
   if (!show) return null;
 
@@ -205,6 +200,17 @@ export function ViewCustomerModal({
                   <GridField label="Currency">
                     {profile?.currency ?? "—"}
                   </GridField>
+                  {stripeCrmId ? (
+                    <div className="sm:col-span-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                        Saved payment cards (Stripe)
+                      </p>
+                      <CustomerSavedCardsInlineSummary
+                        crmCompanyId={stripeCrmId}
+                        className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300"
+                      />
+                    </div>
+                  ) : null}
                   <GridField label="VAT rate (%)">
                     {fmtProfile(profile?.vat_rate)}
                   </GridField>
@@ -233,9 +239,9 @@ export function ViewCustomerModal({
                 </div>
               </SectionCard>
 
-              {crmCompanyId && customer ? (
+              {stripeCrmId && customer ? (
                 <CustomerPaymentCardsEditor
-                  crmCompanyId={crmCompanyId}
+                  crmCompanyId={stripeCrmId}
                   customerName={customer.name ?? "Customer"}
                   active={show}
                 />
