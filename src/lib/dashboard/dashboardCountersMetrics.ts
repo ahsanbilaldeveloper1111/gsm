@@ -89,47 +89,47 @@ export function buildDashboardCounterBlocks(
     }
   }
 
-  const ex = data.expenses;
-  if (ex) {
-    const items = [
-      int("expenses.total", "Count", ex.total),
-      money("expenses.total_amount", "Amount", ex.total_amount),
-      int("expenses.this_month", "This month", ex.this_month),
-      int("expenses.last_month", "Last month", ex.last_month),
-    ].filter(nonNull);
-    if (items.length > 1) {
-      blocks.push({
-        kind: "circles",
-        id: "expenses",
-        title: "Expenses",
-        items,
-      });
-    } else if (items.length === 1) {
-      blocks.push({ kind: "single", entry: items[0]! });
-    }
-  }
+  // const ex = data.expenses;
+  // if (ex) {
+  //   const items = [
+  //     int("expenses.total", "Count", ex.total),
+  //     money("expenses.total_amount", "Amount", ex.total_amount),
+  //     int("expenses.this_month", "This month", ex.this_month),
+  //     int("expenses.last_month", "Last month", ex.last_month),
+  //   ].filter(nonNull);
+  //   if (items.length > 1) {
+  //     blocks.push({
+  //       kind: "circles",
+  //       id: "expenses",
+  //       title: "Expenses",
+  //       items,
+  //     });
+  //   } else if (items.length === 1) {
+  //     blocks.push({ kind: "single", entry: items[0]! });
+  //   }
+  // }
 
-  const iv = data.inventory;
-  if (iv) {
-    const items = [
-      int("inventory.total_items", "Items", iv.total_items),
-      int("inventory.in_stock", "In stock", iv.in_stock),
-      int("inventory.low_stock", "Low", iv.low_stock),
-      int("inventory.out_of_stock", "Out", iv.out_of_stock),
-      int("inventory.categories", "Categories", iv.categories),
-      money("inventory.total_value", "Value", iv.total_value),
-    ].filter(nonNull);
-    if (items.length > 1) {
-      blocks.push({
-        kind: "circles",
-        id: "inventory",
-        title: "Inventory",
-        items,
-      });
-    } else if (items.length === 1) {
-      blocks.push({ kind: "single", entry: items[0]! });
-    }
-  }
+  // const iv = data.inventory;
+  // if (iv) {
+  //   const items = [
+  //     int("inventory.total_items", "Items", iv.total_items),
+  //     int("inventory.in_stock", "In stock", iv.in_stock),
+  //     int("inventory.low_stock", "Low", iv.low_stock),
+  //     int("inventory.out_of_stock", "Out", iv.out_of_stock),
+  //     int("inventory.categories", "Categories", iv.categories),
+  //     money("inventory.total_value", "Value", iv.total_value),
+  //   ].filter(nonNull);
+  //   if (items.length > 1) {
+  //     blocks.push({
+  //       kind: "circles",
+  //       id: "inventory",
+  //       title: "Inventory",
+  //       items,
+  //     });
+  //   } else if (items.length === 1) {
+  //     blocks.push({ kind: "single", entry: items[0]! });
+  //   }
+  // }
 
   const inv = data.invoices;
   if (inv) {

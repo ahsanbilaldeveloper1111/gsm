@@ -6,6 +6,7 @@ export interface ProductCategory {
   name: string;
   description?: string | null;
   is_active?: boolean;
+  tenant_id?: string | null;
   parent_id?: number | null;
   parent?: { id?: number; name?: string } | null;
   created_at?: string;
@@ -14,6 +15,7 @@ export interface ProductCategory {
 
 /** `GET /api/backend/product-categories` — filters + `order[column]` / `order[dir]`. */
 export interface IndexProductCategoryParams {
+  tenant_id?: string | null;
   page?: number;
   limit?: number;
   search?: string;

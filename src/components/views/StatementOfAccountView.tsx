@@ -654,129 +654,129 @@ export function StatementOfAccountView() {
             </div>
           </div>
         </div>
-        <div className="space-y-6 p-5">
-          <div>
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Who
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
+        <div className="space-y-3 p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Filters — vendor/company/customer + date range.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+            <div className={isSuperAdmin ? "lg:col-span-2" : "lg:col-span-3"}>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Vendor
+              </label>
+              <SearchableSelect
+                value={vendorId || null}
+                onChange={(id) => {
+                  setVendorId(id ?? "");
+                  setTenantId("");
+                  setCrmCompanyId("");
+                  resetStatement();
+                }}
+                options={vendorOptions}
+                placeholder="All vendors"
+                loading={vendorsQuery.isLoading}
+                isClearable
+                ariaLabel="Vendor"
+                loadingText="Loading vendors…"
+                emptyText="No vendors"
+              />
+            </div>
+            <div className={isSuperAdmin ? "lg:col-span-2" : "lg:col-span-3"}>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Tenant (company)
+              </label>
+              <TenantSearchableDropdown
+                className="w-full"
+                disabled={!Number.isFinite(vendorIdNum)}
+                value={tenantId}
+                enabled={Number.isFinite(vendorIdNum)}
+                fetchParams={
+                  Number.isFinite(vendorIdNum)
+                    ? { vendor_id: vendorIdNum }
+                    : undefined
+                }
+                onChange={(id) => {
+                  setTenantId(id ?? "");
+                  setCrmCompanyId("");
+                  resetStatement();
+                }}
+                placeholder={
+                  Number.isFinite(vendorIdNum)
+                    ? "All tenants"
+                    : "Select vendor first…"
+                }
+              />
+            </div>
+            {isSuperAdmin ? (
+              <div className="lg:col-span-2">
                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                  Vendor
+                  Customer (CRM)
                 </label>
-                <SearchableSelect
-                  value={vendorId || null}
-                  onChange={(id) => {
-                    setVendorId(id ?? "");
-                    setTenantId("");
-                    setCrmCompanyId("");
-                    resetStatement();
-                  }}
-                  options={vendorOptions}
-                  placeholder="Select vendor…"
-                  loading={vendorsQuery.isLoading}
-                  isClearable
-                  ariaLabel="Vendor"
-                  loadingText="Loading vendors…"
-                  emptyText="No vendors"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                  Company (tenant)
-                </label>
-                <TenantSearchableDropdown
+                <CrmCustomerSearchableDropdown
                   className="w-full"
-                  disabled={!Number.isFinite(vendorIdNum)}
-                  value={tenantId}
-                  enabled={Number.isFinite(vendorIdNum)}
-                  fetchParams={
-                    Number.isFinite(vendorIdNum)
-                      ? { vendor_id: vendorIdNum }
-                      : undefined
-                  }
+                  tenantId={tenantId}
+                  disabled={!tenantId.trim()}
+                  value={crmCompanyId}
                   onChange={(id) => {
-                    setTenantId(id ?? "");
-                    setCrmCompanyId("");
+                    setCrmCompanyId(id ?? "");
                     resetStatement();
                   }}
                   placeholder={
-                    Number.isFinite(vendorIdNum)
-                      ? "Select company…"
-                      : "Select vendor first…"
+                    tenantId.trim()
+                      ? "All customers"
+                      : "Select tenant first…"
                   }
                 />
               </div>
-              {isSuperAdmin ? (
-                <div>
-                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                    Customer (CRM)
-                  </label>
-                  <CrmCustomerSearchableDropdown
-                    className="w-full"
-                    tenantId={tenantId}
-                    disabled={!tenantId.trim()}
-                    value={crmCompanyId}
-                    onChange={(id) => {
-                      setCrmCompanyId(id ?? "");
-                      resetStatement();
-                    }}
-                    placeholder={
-                      tenantId.trim()
-                        ? "Optional — CRM customer"
-                        : "Select tenant first…"
-                    }
-                  />
-                </div>
-              ) : null}
+            ) : null}
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Date from
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                max={endDate || undefined}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  resetStatement();
+                }}
+                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              />
             </div>
-            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-              {isSuperAdmin
-                ? "Use company for tenant statements, or pick a CRM customer for a customer-level statement."
-                : "Select a vendor, then a company."}
-            </p>
-          </div>
-
-          <div className="border-t border-zinc-200/70 pt-5 dark:border-zinc-800">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              When
-            </p>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="grid flex-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                    Start date
-                  </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => {
-                      setStartDate(e.target.value);
-                      resetStatement();
-                    }}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                    End date
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => {
-                      setEndDate(e.target.value);
-                      resetStatement();
-                    }}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                  />
-                </div>
-              </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Date to
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                min={startDate || undefined}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  resetStatement();
+                }}
+                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              />
+            </div>
+            <div className="flex items-end gap-2">
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate("");
+                    setEndDate("");
+                    resetStatement();
+                  }}
+                  className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-900 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-100"
+                >
+                  Clear
+                </button>
+              )}
               <button
                 type="button"
                 disabled={!canSubmit}
                 onClick={() => void handleView()}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-500"
               >
                 {loadingStatement ? (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -796,10 +796,15 @@ export function StatementOfAccountView() {
                     />
                   </svg>
                 )}
-                View statement
+                View
               </button>
             </div>
           </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            {isSuperAdmin
+              ? "Pick vendor and tenant, optionally choose CRM customer, then apply date range."
+              : "Pick vendor and tenant, then apply date range."}
+          </p>
         </div>
       </div>
 

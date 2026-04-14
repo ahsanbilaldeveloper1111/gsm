@@ -2,6 +2,10 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { Elements } from "@stripe/react-stripe-js";
+import type { Stripe } from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import { CompanyProfileAddCardForm } from "@/components/company/CompanyProfileAddCardForm";
 import countries from "world-countries";
 import { MainAppResellerDropdown } from "@/components/resellers/MainAppResellerDropdown";
 import { useCompany } from "@/hooks/company/useCompany";
@@ -11,6 +15,11 @@ import {
   currenciesFromResponse,
   useActiveCurrencies,
 } from "@/hooks/currencies/useActiveCurrencies";
+import {
+  useStripePaymentMethods,
+} from "@/hooks/stripe/useStripeEndpoints";
+import { useStripeProfilePaymentMutations } from "@/hooks/stripe/useStripeProfilePaymentMutations";
+import { useStripePublishableKey } from "@/hooks/stripe/useStripePublishableKey";
 import { useVendors } from "@/hooks/vendors/useVendors";
 import { extractListRows } from "@/lib/api/extractApiData";
 import {
@@ -33,6 +42,7 @@ import {
   showAppToast,
   showBillingBackendErrorToast,
 } from "@/lib/toast/appToast";
+import { parseStripePaymentMethods } from "@/lib/stripe/parseStripePaymentMethods";
 import type {
   Company,
   CompanyDocument,
@@ -73,6 +83,14 @@ function formatDocDate(dateString?: string | null): string {
   } catch {
     return "—";
   }
+}
+
+function unwrapPublishableKey(payload: unknown): string | null {
+  const d = unwrapApiSuccessData<Record<string, unknown>>(payload);
+  if (!d) return null;
+  const k = d.publishable_key ?? d.publishableKey;
+  if (typeof k === "string" && k.startsWith("pk_")) return k;
+  return null;
 }
 
 function profileToFormSlice(
@@ -201,6 +219,7 @@ export function CreateUpdateCompanyModal({
       setForm(emptyCompanyForm());
       setNewBank(emptyBankAccountDraft("USD"));
       setEditingBankIndex(null);
+      setDocumentFiles([]);
       return;
     }
     if (!row) return;
@@ -238,7 +257,7 @@ export function CreateUpdateCompanyModal({
   }, [form.tenant_id, row?.tenant_id]);
 
   const documentsQuery = useCompanyDocuments(
-    open && tenantIdForDocs ? tenantIdForDocs : null,
+    open && isEdit && tenantIdForDocs ? tenantIdForDocs : null,
   );
   const documentsList = useMemo(
     () => getCompanyDocumentsList(documentsQuery.data),
@@ -295,6 +314,78 @@ export function CreateUpdateCompanyModal({
       showBillingBackendErrorToast(new Error("Delete failed"));
     },
   });
+
+  const pkQuery = useStripePublishableKey();
+  const publishableKey = useMemo(
+    () => unwrapPublishableKey(pkQuery.data),
+    [pkQuery.data],
+  );
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(
+    null,
+  );
+  const [cardEditorOpen, setCardEditorOpen] = useState(false);
+  const [addCardError, setAddCardError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!publishableKey) {
+      setStripePromise(null);
+      return;
+    }
+    setStripePromise(loadStripe(publishableKey));
+  }, [publishableKey]);
+
+  /** Same key as `CompanyProfileView`: tenant_id when present, else company id. */
+  const stripeCompanyProfileKey = useMemo(() => {
+    if (!row) return null;
+    const tid = row.tenant_id != null ? String(row.tenant_id).trim() : "";
+    if (tid) return tid;
+    if (row.id != null) return row.id;
+    return null;
+  }, [row]);
+
+  const { data: stripePmData, refetch: refetchCards } = useStripePaymentMethods(
+    open && isEdit && stripeCompanyProfileKey != null
+      ? stripeCompanyProfileKey
+      : null,
+  );
+  const stripePaymentMethods = useMemo(
+    () => parseStripePaymentMethods(stripePmData),
+    [stripePmData],
+  );
+  const { setDefault: setDefaultCardMutation, remove: removeCardMutation } =
+    useStripeProfilePaymentMutations(
+      open && isEdit && stripeCompanyProfileKey != null
+        ? stripeCompanyProfileKey
+        : null,
+    );
+
+  function handleCardAdded() {
+    setAddCardError(null);
+    setCardEditorOpen(false);
+    void refetchCards();
+    showAppToast("Card added successfully.", "success");
+  }
+
+  function handleSetDefaultCard(paymentMethodId: string) {
+    setDefaultCardMutation.mutate(paymentMethodId, {
+      onSuccess: () => {
+        void refetchCards();
+        showAppToast("Default card updated.", "success");
+      },
+      onError: (e) => showBillingBackendErrorToast(e),
+    });
+  }
+
+  function handleRemoveCard(paymentMethodId: string) {
+    if (!globalThis.confirm("Remove this card?")) return;
+    removeCardMutation.mutate(paymentMethodId, {
+      onSuccess: () => {
+        void refetchCards();
+        showAppToast("Card removed.", "success");
+      },
+      onError: (e) => showBillingBackendErrorToast(e),
+    });
+  }
 
   async function handleDownloadDocument(doc: CompanyDocument) {
     if (!tenantIdForDocs) {
@@ -791,72 +882,6 @@ export function CreateUpdateCompanyModal({
                 <section className="rounded-xl border border-zinc-200/80 bg-white/50 dark:border-zinc-800 dark:bg-zinc-950/40">
                   <div className="border-b border-zinc-200/70 px-4 py-2.5 dark:border-zinc-800">
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                      Ledger metrics
-                    </h3>
-                  </div>
-                  <div className="grid gap-3 p-4 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="mb-1 block text-[11px] font-medium text-zinc-500">
-                        Outstanding invoices (count)
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        className={inputClass}
-                        value={form.profile.outstanding_invoices}
-                        onChange={(e) =>
-                          setProfile("outstanding_invoices", e.target.value)
-                        }
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1 block text-[11px] font-medium text-zinc-500">
-                        Discounts applied YTD
-                      </span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className={inputClass}
-                        value={form.profile.discounts_applied_ytd}
-                        onChange={(e) =>
-                          setProfile("discounts_applied_ytd", e.target.value)
-                        }
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1 block text-[11px] font-medium text-zinc-500">
-                        VAT collected
-                      </span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className={inputClass}
-                        value={form.profile.vat_collected}
-                        onChange={(e) =>
-                          setProfile("vat_collected", e.target.value)
-                        }
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1 block text-[11px] font-medium text-zinc-500">
-                        Active subscriptions
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        className={inputClass}
-                        value={form.profile.active_subscriptions}
-                        onChange={(e) =>
-                          setProfile("active_subscriptions", e.target.value)
-                        }
-                      />
-                    </label>
-                  </div>
-                </section>
-
-                <section className="rounded-xl border border-zinc-200/80 bg-white/50 dark:border-zinc-800 dark:bg-zinc-950/40">
-                  <div className="border-b border-zinc-200/70 px-4 py-2.5 dark:border-zinc-800">
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                       Credit & discounts
                     </h3>
                   </div>
@@ -1225,128 +1250,245 @@ export function CreateUpdateCompanyModal({
                   </div>
                 </section>
 
-                <section className="rounded-xl border border-zinc-200/80 bg-white/50 dark:border-zinc-800 dark:bg-zinc-950/40">
-                  <div className="border-b border-zinc-200/70 px-4 py-2.5 dark:border-zinc-800">
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                      Documents
-                    </h3>
-                  </div>
-                  <div className="space-y-4 p-4">
-                    {!tenantIdForDocs ? (
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Set a tenant ID (vendor / tenant) to list, upload, and
-                        manage company documents for that tenant.
-                      </p>
-                    ) : (
-                      <>
-                        <div className="flex flex-wrap items-end gap-2">
-                          <label className="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                            <span className="mb-1 block">Add files</span>
-                            <input
-                              type="file"
-                              multiple
-                              data-company-doc-modal
-                              className="block max-w-full text-xs file:mr-2 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-2 file:py-1 dark:file:bg-zinc-800"
-                              onChange={(e) => {
-                                setDocumentFiles(
-                                  Array.from(e.target.files ?? []),
-                                );
+                {isEdit ? (
+                  <section className="rounded-xl border border-zinc-200/80 bg-white/50 dark:border-zinc-800 dark:bg-zinc-950/40">
+                    <div className="border-b border-zinc-200/70 px-4 py-2.5 dark:border-zinc-800">
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                        Documents
+                      </h3>
+                    </div>
+                    <div className="space-y-4 p-4">
+                      {!tenantIdForDocs ? (
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                          Set a tenant ID (vendor / tenant) to list, upload, and
+                          manage company documents for that tenant.
+                        </p>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap items-end gap-2">
+                            <label className="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                              <span className="mb-1 block">Add files</span>
+                              <input
+                                type="file"
+                                multiple
+                                data-company-doc-modal
+                                className="block max-w-full text-xs file:mr-2 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-2 file:py-1 dark:file:bg-zinc-800"
+                                onChange={(e) => {
+                                  setDocumentFiles(
+                                    Array.from(e.target.files ?? []),
+                                  );
+                                }}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              disabled={
+                                documentFiles.length === 0 ||
+                                uploadDocumentsMutation.isPending
+                              }
+                              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                              onClick={() => {
+                                if (documentFiles.length === 0) return;
+                                uploadDocumentsMutation.mutate(documentFiles);
                               }}
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            disabled={
-                              documentFiles.length === 0 ||
-                              uploadDocumentsMutation.isPending
-                            }
-                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-                            onClick={() => {
-                              if (documentFiles.length === 0) return;
-                              uploadDocumentsMutation.mutate(documentFiles);
-                            }}
-                          >
-                            {uploadDocumentsMutation.isPending
-                              ? "Uploading…"
-                              : "Upload"}
-                          </button>
-                        </div>
-                        {documentsQuery.isPending ? (
-                          <p className="text-sm text-zinc-500">
-                            Loading documents…
-                          </p>
-                        ) : documentsList.length === 0 ? (
-                          <p className="text-sm text-zinc-500">
-                            No documents uploaded yet.
-                          </p>
-                        ) : (
-                          <div className="overflow-x-auto rounded-lg border border-zinc-200/80 dark:border-zinc-700">
-                            <table className="w-full border-collapse text-left text-xs">
-                              <thead>
-                                <tr className="border-b border-zinc-200 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-900/50">
-                                  <th className="px-2 py-2">Name</th>
-                                  <th className="px-2 py-2">Type</th>
-                                  <th className="px-2 py-2">Updated</th>
-                                  <th className="px-2 py-2 text-right">
-                                    Actions
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {documentsList.map((doc) => (
-                                  <tr
-                                    key={doc.id}
-                                    className="border-b border-zinc-100 dark:border-zinc-800"
-                                  >
-                                    <td className="px-2 py-2">{doc.name}</td>
-                                    <td className="px-2 py-2">
-                                      {doc.type ?? "—"}
-                                    </td>
-                                    <td className="px-2 py-2">
-                                      {formatDocDate(doc.updated_at)}
-                                    </td>
-                                    <td className="px-2 py-2 text-right">
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          void handleDownloadDocument(doc)
-                                        }
-                                        className="rounded-lg bg-sky-100 px-2 py-1 text-[11px] font-medium text-sky-900 hover:bg-sky-200 dark:bg-sky-950/50 dark:text-sky-100"
-                                      >
-                                        Download
-                                      </button>
-                                      <button
-                                        type="button"
-                                        disabled={
-                                          deleteDocumentMutation.isPending
-                                        }
-                                        className="ml-2 rounded-lg bg-rose-100 px-2 py-1 text-[11px] font-medium text-rose-900 hover:bg-rose-200 disabled:opacity-50 dark:bg-rose-950/50 dark:text-rose-100"
-                                        onClick={() => {
-                                          if (
-                                            !globalThis.confirm(
-                                              "Remove this document?",
-                                            )
-                                          ) {
-                                            return;
-                                          }
-                                          deleteDocumentMutation.mutate(
-                                            doc.id,
-                                          );
-                                        }}
-                                      >
-                                        Delete
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                            >
+                              {uploadDocumentsMutation.isPending
+                                ? "Uploading…"
+                                : "Upload"}
+                            </button>
                           </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </section>
+                          {documentsQuery.isPending ? (
+                            <p className="text-sm text-zinc-500">
+                              Loading documents…
+                            </p>
+                          ) : documentsList.length === 0 ? (
+                            <p className="text-sm text-zinc-500">
+                              No documents uploaded yet.
+                            </p>
+                          ) : (
+                            <div className="overflow-x-auto rounded-lg border border-zinc-200/80 dark:border-zinc-700">
+                              <table className="w-full border-collapse text-left text-xs">
+                                <thead>
+                                  <tr className="border-b border-zinc-200 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-900/50">
+                                    <th className="px-2 py-2">Name</th>
+                                    <th className="px-2 py-2">Type</th>
+                                    <th className="px-2 py-2">Updated</th>
+                                    <th className="px-2 py-2 text-right">
+                                      Actions
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {documentsList.map((doc) => (
+                                    <tr
+                                      key={doc.id}
+                                      className="border-b border-zinc-100 dark:border-zinc-800"
+                                    >
+                                      <td className="px-2 py-2">{doc.name}</td>
+                                      <td className="px-2 py-2">
+                                        {doc.type ?? "—"}
+                                      </td>
+                                      <td className="px-2 py-2">
+                                        {formatDocDate(doc.updated_at)}
+                                      </td>
+                                      <td className="px-2 py-2 text-right">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            void handleDownloadDocument(doc)
+                                          }
+                                          className="rounded-lg bg-sky-100 px-2 py-1 text-[11px] font-medium text-sky-900 hover:bg-sky-200 dark:bg-sky-950/50 dark:text-sky-100"
+                                        >
+                                          Download
+                                        </button>
+                                        <button
+                                          type="button"
+                                          disabled={
+                                            deleteDocumentMutation.isPending
+                                          }
+                                          className="ml-2 rounded-lg bg-rose-100 px-2 py-1 text-[11px] font-medium text-rose-900 hover:bg-rose-200 disabled:opacity-50 dark:bg-rose-950/50 dark:text-rose-100"
+                                          onClick={() => {
+                                            if (
+                                              !globalThis.confirm(
+                                                "Remove this document?",
+                                              )
+                                            ) {
+                                              return;
+                                            }
+                                            deleteDocumentMutation.mutate(
+                                              doc.id,
+                                            );
+                                          }}
+                                        >
+                                          Delete
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </section>
+                ) : null}
+
+                {isEdit && stripeCompanyProfileKey != null ? (
+                  <section className="rounded-xl border border-zinc-200/80 bg-white/50 dark:border-zinc-800 dark:bg-zinc-950/40">
+                    <div className="border-b border-zinc-200/70 px-4 py-2.5 dark:border-zinc-800">
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                        Payment cards (Stripe)
+                      </h3>
+                    </div>
+                    <div className="space-y-3 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                          Company profile cards (not CRM customer). Uses the same
+                          Stripe routes as the company profile view.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCardEditorOpen((x) => !x);
+                            setAddCardError(null);
+                          }}
+                          className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-900 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/50 dark:text-sky-100"
+                        >
+                          {cardEditorOpen ? "Hide add card" : "Add card"}
+                        </button>
+                      </div>
+
+                      {stripePaymentMethods.length === 0 && !cardEditorOpen ? (
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                          No cards on file yet.
+                        </p>
+                      ) : null}
+
+                      {stripePaymentMethods.length > 0 ? (
+                        <ul className="space-y-2">
+                          {stripePaymentMethods.map((pm) => (
+                            <li
+                              key={pm.id}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900/50"
+                            >
+                              <span className="text-sm text-zinc-800 dark:text-zinc-200">
+                                <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-[11px] font-medium uppercase text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100">
+                                  {pm.card?.brand ?? "Card"}
+                                </span>{" "}
+                                **** {pm.card?.last4 ?? "—"}
+                                {pm.card?.exp_month != null &&
+                                pm.card?.exp_year != null ? (
+                                  <span className="ml-1 text-xs text-zinc-500">
+                                    ({String(pm.card.exp_month).padStart(2, "0")}/
+                                    {pm.card.exp_year})
+                                  </span>
+                                ) : null}
+                                {pm.is_default ? (
+                                  <span className="ml-2 rounded-md bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-900 dark:bg-sky-950/60 dark:text-sky-100">
+                                    Default
+                                  </span>
+                                ) : null}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                {!pm.is_default ? (
+                                  <button
+                                    type="button"
+                                    disabled={setDefaultCardMutation.isPending}
+                                    onClick={() => handleSetDefaultCard(pm.id)}
+                                    className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+                                  >
+                                    Set default
+                                  </button>
+                                ) : null}
+                                <button
+                                  type="button"
+                                  disabled={removeCardMutation.isPending}
+                                  onClick={() => handleRemoveCard(pm.id)}
+                                  className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-medium text-rose-900 hover:bg-rose-100 disabled:opacity-50 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-100"
+                                >
+                                  Remove
+                                </button>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+
+                      {cardEditorOpen ? (
+                        <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-900/30">
+                          {!publishableKey || !stripePromise ? (
+                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                              {pkQuery.isPending
+                                ? "Loading Stripe configuration…"
+                                : "Stripe publishable key is unavailable."}
+                            </p>
+                          ) : (
+                            <Elements stripe={stripePromise}>
+                              <CompanyProfileAddCardForm
+                                profileId={stripeCompanyProfileKey}
+                                cardholderLabel={
+                                  String(row?.name ?? "").trim() || "Company"
+                                }
+                                onCardAdded={handleCardAdded}
+                                onError={(msg) => setAddCardError(msg)}
+                              />
+                            </Elements>
+                          )}
+                          {addCardError ? (
+                            <p
+                              className="mt-3 rounded-lg border border-rose-200/90 bg-rose-50/90 px-3 py-2 text-sm text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-100"
+                              role="alert"
+                            >
+                              {addCardError}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  </section>
+                ) : null}
               </div>
             )}
           </div>

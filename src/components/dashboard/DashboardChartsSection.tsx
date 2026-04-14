@@ -348,14 +348,13 @@ export function DashboardChartsSection({
             strokeClass="text-emerald-500"
             formatY={fmtMoney}
           />
-          <TrendBlock
+          {/* <TrendBlock
             title="Expense trend"
             items={expense}
             valueKey="expenses"
             strokeClass="text-amber-500"
             formatY={fmtMoney}
           />
-          {inv ? <InventoryStatusCard d={inv} /> : null}
 
           <HorizontalBars
             title="Expense breakdown"
@@ -363,7 +362,7 @@ export function DashboardChartsSection({
             labelKey="category_name"
             valueKey="total_amount"
             formatValue={fmtMoney}
-          />
+          /> */}
           <HorizontalBars
             title="Inventory value by category"
             rows={invVal as unknown as Record<string, unknown>[]}

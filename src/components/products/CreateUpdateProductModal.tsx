@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { FormField, FormModal } from "@/components/crud/FormModal";
+import { ProductCategoryManagementModal } from "@/components/product-categories/ProductCategoryManagementModal";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useActiveCurrencies, currenciesFromResponse } from "@/hooks/currencies/useActiveCurrencies";
 import { useProduct } from "@/hooks/products/useProduct";
@@ -29,7 +30,7 @@ import type { Company } from "@/models/Company";
 import type { Product } from "@/models/Product";
 import type { Vendor } from "@/models/Vendor";
 
-type CatRow = { id: number; name?: string };
+type CatRow = { id: number; name?: string; tenant_id?: string | null };
 
 type CreateUpdateProductModalProps = {
   open: boolean;
@@ -48,20 +49,27 @@ export function CreateUpdateProductModal({
   const [form, setForm] = useState<ProductFormState>(defaultProductFormState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
 
   const mutations = useProductMutations();
-  const categoriesQ = useProductCategories({ limit: 500 });
+  const categoriesQ = useProductCategories(
+    {
+      limit: 500,
+      ...(form.tenant_id.trim() ? { tenant_id: form.tenant_id.trim() } : {}),
+    },
+    { enabled: open },
+  );
   const currenciesQ = useActiveCurrencies();
   const detailQ = useProduct(open && isEdit ? productId : null);
   const mainAppResellerMap = useMainAppResellerNameMap();
 
   const vendorsQ = useVendors(
     { page: 1, limit: 500, load_resellers: true },
-    { enabled: open && isEdit },
+    { enabled: open },
   );
   const allCompaniesQ = useCompanies(
     { page: 1, limit: 1000, load_profile: false },
-    { enabled: open && isEdit },
+    { enabled: open },
   );
   const filteredCompaniesQ = useCompanies(
     {
@@ -75,7 +83,6 @@ export function CreateUpdateProductModal({
     {
       enabled:
         open &&
-        isEdit &&
         selectedVendorId != null &&
         selectedVendorId !== "",
     },
@@ -83,8 +90,25 @@ export function CreateUpdateProductModal({
 
   const categoryRows = useMemo(() => {
     const { rows } = extractListRows<CatRow>(categoriesQ.data);
-    return rows.filter((r) => r.id != null);
-  }, [categoriesQ.data]);
+    const tenantId = form.tenant_id.trim();
+    return rows.filter((r) => {
+      if (r.id == null) return false;
+      if (tenantId) return true;
+      const rowTenantId = typeof r.tenant_id === "string" ? r.tenant_id.trim() : "";
+      return rowTenantId === "";
+    });
+  }, [categoriesQ.data, form.tenant_id]);
+
+  useEffect(() => {
+    if (!open) return;
+    const selected = String(form.category_id ?? "").trim();
+    if (!selected) return;
+    const existsInOptions = categoryRows.some((c) => String(c.id) === selected);
+    if (!existsInOptions) {
+      // Clear category if tenant switch made current category invalid.
+      setForm((s) => ({ ...s, category_id: "" }));
+    }
+  }, [open, form.category_id, categoryRows]);
 
   const currencies = useMemo(() => {
     const list = currenciesFromResponse(currenciesQ.data);
@@ -124,7 +148,12 @@ export function CreateUpdateProductModal({
   ]);
 
   useEffect(() => {
-    if (!open || !isEdit) return;
+    if (!open) return;
+    if (!isEdit) {
+      setForm(defaultProductFormState());
+      setErrors({});
+      return;
+    }
     const raw = getApiData(detailQ.data) as
       | (Product & Record<string, unknown>)
       | undefined;
@@ -217,53 +246,51 @@ export function CreateUpdateProductModal({
         </div>
       ) : null}
 
-      {isEdit ? (
-        <>
-          <FormField label="Vendor">
-            <select
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={selectedVendorId ?? ""}
-              onChange={(e) => handleVendorChange(e.target.value)}
-            >
-              <option value="">Select a vendor…</option>
-              {vendorRows.map((v) => (
-                <option key={v.id} value={String(v.id)}>
-                  {v.name ?? `Vendor ${v.id}`}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              Select a vendor first, then choose the company (tenant) this
-              product is attached to.
-            </p>
-          </FormField>
+      <>
+        <FormField label="Vendor">
+          <select
+            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            value={selectedVendorId ?? ""}
+            onChange={(e) => handleVendorChange(e.target.value)}
+          >
+            <option value="">Select a vendor…</option>
+            {vendorRows.map((v) => (
+              <option key={v.id} value={String(v.id)}>
+                {v.name ?? `Vendor ${v.id}`}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+            Select a vendor first, then choose the company (tenant) this
+            product is attached to.
+          </p>
+        </FormField>
 
-          <FormField label="Company (tenant)">
-            <select
-              className={`w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 ${inputErr("tenant_id")}`}
-              value={form.tenant_id}
-              disabled={!selectedVendorId}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, tenant_id: e.target.value }))
-              }
-            >
-              {companyOptions.map((o, i) => (
-                <option key={`${o.value}-${i}`} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.tenant_id ? (
-              <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
-                {errors.tenant_id}
-              </p>
-            ) : null}
-            <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              Product is scoped to the selected company when provided.
+        <FormField label="Company (tenant)">
+          <select
+            className={`w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 ${inputErr("tenant_id")}`}
+            value={form.tenant_id}
+            disabled={!selectedVendorId}
+            onChange={(e) =>
+              setForm((s) => ({ ...s, tenant_id: e.target.value }))
+            }
+          >
+            {companyOptions.map((o, i) => (
+              <option key={`${o.value}-${i}`} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          {errors.tenant_id ? (
+            <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+              {errors.tenant_id}
             </p>
-          </FormField>
-        </>
-      ) : null}
+          ) : null}
+          <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+            Product is scoped to the selected company when provided.
+          </p>
+        </FormField>
+      </>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Product name *">
@@ -294,6 +321,18 @@ export function CreateUpdateProductModal({
       </div>
 
       <FormField label="Category *">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+            Pick an existing category or manage categories.
+          </p>
+          <button
+            type="button"
+            onClick={() => setCategoryManagerOpen(true)}
+            className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            Manage categories
+          </button>
+        </div>
         <select
           className={`w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 ${inputErr("category_id")}`}
           value={form.category_id === "" ? "" : String(form.category_id)}
@@ -402,6 +441,11 @@ export function CreateUpdateProductModal({
         />
         Active
       </label>
+
+      <ProductCategoryManagementModal
+        open={categoryManagerOpen}
+        onClose={() => setCategoryManagerOpen(false)}
+      />
     </FormModal>
   );
 }

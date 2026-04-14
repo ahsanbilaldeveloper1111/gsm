@@ -10,11 +10,18 @@ export type AddCardByProfileBody = {
   stripeToken: string;
 };
 
-export function useStripeProfileAddCardMutation(profileId: number | null) {
+export function useStripeProfileAddCardMutation(
+  profileId: number | string | null,
+) {
   const qc = useQueryClient();
+  const valid =
+    profileId != null &&
+    profileId !== "" &&
+    !(typeof profileId === "number" && profileId === 0);
+
   return useMutation({
     mutationFn: (body: AddCardByProfileBody) => {
-      if (profileId == null || profileId === 0) {
+      if (!valid) {
         throw new Error("Missing company profile id");
       }
       return stripeService.createAndConfirmPaymentMethodByProfile(
@@ -23,7 +30,7 @@ export function useStripeProfileAddCardMutation(profileId: number | null) {
       );
     },
     onSuccess: () => {
-      if (profileId != null) {
+      if (valid) {
         void qc.invalidateQueries({
           queryKey: queryKeys.stripe.paymentMethods(profileId),
         });

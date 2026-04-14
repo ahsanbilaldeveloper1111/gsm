@@ -1,11 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DashboardChartsSection } from "@/components/dashboard/DashboardChartsSection";
 import { DashboardMoreAnalyticsSection } from "@/components/dashboard/DashboardMoreAnalyticsSection";
 import { MetricCard } from "@/components/dashboard/MetricCard";
+import { CrmCustomerSearchableDropdown } from "@/components/ui/CrmCustomerSearchableDropdown";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { TenantSearchableDropdown } from "@/components/ui/TenantSearchableDropdown";
 import type { CounterMetricEntry } from "@/lib/dashboard/analyticsCounters";
 import { dashboardCounterMetricEntries } from "@/lib/dashboard/dashboardCountersMetrics";
+import { usePermissions } from "@/hooks/permissions/usePermissions";
+import { useVendors } from "@/hooks/vendors/useVendors";
 import {
   useAnalyticsByMonths,
   useAnalyticsProductsSpentByCompany,
@@ -14,6 +19,8 @@ import {
 } from "@/hooks/analytics/useAnalyticsEndpoints";
 import { useAnalyticsDashboardCharts } from "@/hooks/analytics/useAnalyticsDashboardCharts";
 import { useAnalyticsDashboardCounters } from "@/hooks/analytics/useAnalyticsDashboardCounters";
+import type { QueryParams } from "@/lib/api/http";
+import { extractListRows } from "@/lib/api/extractApiData";
 import { unwrapApiSuccessData } from "@/lib/dashboard/unwrapAnalyticsPayload";
 import type { DashboardCounters } from "@/models/Analytics";
 
@@ -28,12 +35,55 @@ function formatMetricValue(row: CounterMetricEntry): string {
 }
 
 export function DashboardOverview() {
-  const dashboardCountersQuery = useAnalyticsDashboardCounters();
-  const chartsQuery = useAnalyticsDashboardCharts();
-  const profitLossQuery = useAnalyticsProfitLoss(null);
-  const recentActivityQuery = useAnalyticsRecentActivity(null);
-  const productsSpentQuery = useAnalyticsProductsSpentByCompany(null);
-  const byMonthsQuery = useAnalyticsByMonths(null);
+  const { isSuperAdmin } = usePermissions();
+  const [vendorId, setVendorId] = useState("");
+  const [tenantId, setTenantId] = useState("");
+  const [crmCompanyId, setCrmCompanyId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const vendorIdNum = vendorId.trim() ? Number.parseInt(vendorId, 10) : NaN;
+  const vendorsQuery = useVendors({
+    limit: 500,
+    "order[column]": "name",
+    "order[dir]": "asc",
+  });
+  const vendorRows = extractListRows(vendorsQuery.data).rows as {
+    id: number;
+    name: string;
+  }[];
+  const vendorOptions = useMemo(
+    () =>
+      vendorRows.map((v) => ({
+        value: String(v.id),
+        label: v.name,
+      })),
+    [vendorRows],
+  );
+
+  const analyticsParams = useMemo((): QueryParams => {
+    const t = tenantId.trim();
+    const c = crmCompanyId.trim();
+    const from = startDate.trim();
+    const to = endDate.trim();
+    return {
+      // Keep both key styles for compatibility across analytics endpoints.
+      ...(t ? { tenant_id: t, tenantId: t } : {}),
+      ...(c ? { crm_company_id: c, crmCompanyId: c } : {}),
+      ...(from ? { start_date: from, startDate: from } : {}),
+      ...(to ? { end_date: to, endDate: to } : {}),
+    };
+  }, [tenantId, crmCompanyId, startDate, endDate]);
+
+  const dashboardCountersQuery = useAnalyticsDashboardCounters(analyticsParams);
+  const chartsQuery = useAnalyticsDashboardCharts(analyticsParams);
+  const profitLossQuery = useAnalyticsProfitLoss(analyticsParams);
+  const recentActivityQuery = useAnalyticsRecentActivity(analyticsParams);
+  const productsSpentQuery = useAnalyticsProductsSpentByCompany(analyticsParams);
+  const byMonthsQuery = useAnalyticsByMonths({
+    ...analyticsParams,
+    limit: 12,
+  });
 
   const counterRows = useMemo(() => {
     const raw = unwrapApiSuccessData<DashboardCounters>(
@@ -59,7 +109,95 @@ export function DashboardOverview() {
 
   return (
     <>
-      <section className="rounded-2xl border border-zinc-200/50 bg-white/45 p-6 shadow-[0_4px_32px_-12px_rgba(15,23,42,0.07)] backdrop-blur-[2px] dark:border-zinc-800/50 dark:bg-zinc-950/40 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)] sm:rounded-3xl sm:p-8">
+      <section className="relative z-30 rounded-2xl border border-zinc-200/50 bg-white/45 p-4 shadow-[0_4px_32px_-12px_rgba(15,23,42,0.07)] backdrop-blur-[2px] dark:border-zinc-800/50 dark:bg-zinc-950/40 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)] sm:rounded-3xl sm:p-6">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          Filters — search is debounced before calling the API.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Vendor
+            </label>
+            <SearchableSelect
+              value={vendorId || null}
+              onChange={(id) => {
+                setVendorId(id ?? "");
+                setTenantId("");
+                setCrmCompanyId("");
+              }}
+              options={vendorOptions}
+              placeholder="All vendors"
+              loading={vendorsQuery.isLoading}
+              isClearable
+              ariaLabel="Vendor"
+              loadingText="Loading vendors…"
+              emptyText="No vendors"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Tenant (company)
+            </label>
+            <TenantSearchableDropdown
+              className="w-full"
+              disabled={!Number.isFinite(vendorIdNum)}
+              value={tenantId}
+              enabled={Number.isFinite(vendorIdNum)}
+              fetchParams={
+                Number.isFinite(vendorIdNum) ? { vendor_id: vendorIdNum } : undefined
+              }
+              onChange={(id) => {
+                setTenantId(id ?? "");
+                setCrmCompanyId("");
+              }}
+              placeholder={
+                Number.isFinite(vendorIdNum) ? "All tenants" : "Select vendor first…"
+              }
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Customer (CRM)
+            </label>
+            <CrmCustomerSearchableDropdown
+              className="w-full"
+              tenantId={tenantId}
+              disabled={!isSuperAdmin || !tenantId.trim()}
+              value={crmCompanyId}
+              onChange={(id) => setCrmCompanyId(id ?? "")}
+              placeholder={
+                tenantId.trim() ? "All customers" : "Select tenant first…"
+              }
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Start date
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              max={endDate || undefined}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              End date
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate || undefined}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="relative z-10 rounded-2xl border border-zinc-200/50 bg-white/45 p-6 shadow-[0_4px_32px_-12px_rgba(15,23,42,0.07)] backdrop-blur-[2px] dark:border-zinc-800/50 dark:bg-zinc-950/40 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)] sm:rounded-3xl sm:p-8">
         <div className="mb-8">
           <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl">
             <span

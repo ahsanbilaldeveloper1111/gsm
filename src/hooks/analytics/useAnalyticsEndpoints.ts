@@ -15,7 +15,7 @@ function qp(
 export function useAnalyticsIndex(params?: Record<string, unknown> | null) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.index(),
+    queryKey: [...queryKeys.analytics.index(), params ?? null],
     queryFn: () => analyticsService.index(qp(params)),
     enabled,
   });
@@ -24,7 +24,7 @@ export function useAnalyticsIndex(params?: Record<string, unknown> | null) {
 export function useAnalyticsCountersApi(params?: Record<string, unknown> | null) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.counters(),
+    queryKey: [...queryKeys.analytics.counters(), params ?? null],
     queryFn: () => analyticsService.counters(qp(params)),
     enabled,
   });
@@ -35,7 +35,7 @@ export function useAnalyticsRevenueTrend(
 ) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.revenueTrend(),
+    queryKey: [...queryKeys.analytics.revenueTrend(), params ?? null],
     queryFn: () => analyticsService.revenueTrend(qp(params)),
     enabled,
   });
@@ -46,7 +46,7 @@ export function useAnalyticsExpenseTrend(
 ) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.expenseTrend(),
+    queryKey: [...queryKeys.analytics.expenseTrend(), params ?? null],
     queryFn: () => analyticsService.expenseTrend(qp(params)),
     enabled,
   });
@@ -57,7 +57,7 @@ export function useAnalyticsInventoryStatus(
 ) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.inventoryStatus(),
+    queryKey: [...queryKeys.analytics.inventoryStatus(), params ?? null],
     queryFn: () => analyticsService.inventoryStatus(qp(params)),
     enabled,
   });
@@ -66,7 +66,7 @@ export function useAnalyticsInventoryStatus(
 export function useAnalyticsTopProducts(params?: Record<string, unknown> | null) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.topProducts(),
+    queryKey: [...queryKeys.analytics.topProducts(), params ?? null],
     queryFn: () => analyticsService.topProducts(qp(params)),
     enabled,
   });
@@ -77,7 +77,7 @@ export function useAnalyticsExpenseBreakdown(
 ) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.expenseBreakdown(),
+    queryKey: [...queryKeys.analytics.expenseBreakdown(), params ?? null],
     queryFn: () => analyticsService.expenseBreakdown(qp(params)),
     enabled,
   });
@@ -88,7 +88,7 @@ export function useAnalyticsInventoryValue(
 ) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.inventoryValue(),
+    queryKey: [...queryKeys.analytics.inventoryValue(), params ?? null],
     queryFn: () => analyticsService.inventoryValue(qp(params)),
     enabled,
   });
@@ -99,7 +99,7 @@ export function useAnalyticsRecentActivity(
 ) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.recentActivity(),
+    queryKey: [...queryKeys.analytics.recentActivity(), params ?? null],
     queryFn: () => analyticsService.recentActivity(qp(params)),
     enabled,
   });
@@ -108,7 +108,7 @@ export function useAnalyticsRecentActivity(
 export function useAnalyticsProfitLoss(params?: Record<string, unknown> | null) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.profitLoss(),
+    queryKey: [...queryKeys.analytics.profitLoss(), params ?? null],
     queryFn: () => analyticsService.profitLoss(qp(params)),
     enabled,
   });
@@ -119,7 +119,7 @@ export function useAnalyticsProductsSpentByCompany(
 ) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.productsSpentByCompany(),
+    queryKey: [...queryKeys.analytics.productsSpentByCompany(), params ?? null],
     queryFn: () => analyticsService.productsSpentByCompany(qp(params)),
     enabled,
   });
@@ -128,7 +128,7 @@ export function useAnalyticsProductsSpentByCompany(
 export function useAnalyticsByMonths(params?: Record<string, unknown> | null) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.analytics.byMonths(),
+    queryKey: [...queryKeys.analytics.byMonths(), params ?? null],
     queryFn: () => analyticsService.byMonths(qp(params)),
     enabled,
   });

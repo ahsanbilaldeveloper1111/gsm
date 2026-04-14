@@ -96,6 +96,77 @@ function TrendLineSvg({
   );
 }
 
+function compactAmount(v: number): string {
+  return new Intl.NumberFormat(undefined, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(v);
+}
+
+function ByMonthAxisChart({
+  rows,
+  currencyCode,
+}: {
+  rows: { label: string; value: number }[];
+  currencyCode: string;
+}) {
+  if (rows.length === 0) return null;
+  const values = rows.map((r) => (Number.isFinite(r.value) ? r.value : 0));
+  const maxValue = Math.max(...values, 1);
+  const yTicks = [1, 0.75, 0.5, 0.25, 0];
+
+  return (
+    <div className="rounded-xl border border-zinc-200/70 bg-white/70 p-3 dark:border-zinc-800/80 dark:bg-zinc-900/35">
+      <div className="grid grid-cols-[88px_1fr] gap-3">
+        <div className="relative h-56">
+          {yTicks.map((t) => (
+            <div
+              key={t}
+              className="absolute left-0 right-0 -translate-y-1/2 text-right text-[11px] text-zinc-500 dark:text-zinc-400"
+              style={{ top: `${(1 - t) * 100}%` }}
+            >
+              {currencyCode} {compactAmount(maxValue * t)}
+            </div>
+          ))}
+        </div>
+
+        <div className="relative h-56 border-l border-b border-zinc-300 dark:border-zinc-600">
+          {yTicks.map((t) => (
+            <div
+              key={t}
+              className="pointer-events-none absolute left-0 right-0 border-t border-zinc-200/80 dark:border-zinc-700/60"
+              style={{ top: `${(1 - t) * 100}%` }}
+            />
+          ))}
+
+          <div className="absolute inset-0 flex items-end justify-between gap-2 px-2 pb-1">
+            {rows.map((row, i) => {
+              const hPct = (values[i]! / maxValue) * 100;
+              return (
+                <div key={`${row.label}-${i}`} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+                  <div className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+                    {values[i]! > 0 ? compactAmount(values[i]!) : ""}
+                  </div>
+                  <div className="relative flex h-44 w-full items-end justify-center">
+                    <div
+                      className="w-full max-w-8 rounded-t-md bg-gradient-to-t from-sky-600 to-cyan-400 shadow-[0_6px_14px_-6px_rgba(14,165,233,0.65)]"
+                      style={{ height: `${Math.max(1.5, hPct)}%` }}
+                      title={`${row.label}: ${currencyCode} ${values[i]!.toLocaleString()}`}
+                    />
+                  </div>
+                  <div className="w-full truncate text-center text-[11px] text-zinc-600 dark:text-zinc-300">
+                    {row.label}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HorizontalBars({
   title,
   rows,
@@ -163,12 +234,24 @@ function normalizeByMonthsSeries(
       keys.find((k) => /^(month|period|label|name|date)$/i.test(k)) ??
       keys[0] ??
       "label";
-    const valueKey = keys.find(
+    const preferredValueKeys = [
+      "total_amount",
+      "paid_amount",
+      "outstanding_amount",
+      "amount",
+      "value",
+      "total",
+      "revenue",
+      "expenses",
+    ];
+    const valueKey =
+      preferredValueKeys.find((k) => keys.includes(k)) ??
+      keys.find(
       (k) =>
         k !== labelKey &&
         (typeof first[k] === "number" ||
           (typeof first[k] === "string" && first[k] !== "")),
-    );
+      );
     if (!valueKey) return null;
     return rows.map((r) => ({
       label: String(r[labelKey] ?? "—"),
@@ -177,6 +260,11 @@ function normalizeByMonthsSeries(
   }
   if (typeof data === "object") {
     const o = data as Record<string, unknown>;
+    // Common backend shape: { data: [...], ...meta }
+    if ("data" in o) {
+      const fromData = normalizeByMonthsSeries(o.data);
+      if (fromData != null) return fromData;
+    }
     return Object.entries(o)
       .filter(
         ([, v]) =>
@@ -324,26 +412,28 @@ export function DashboardMoreAnalyticsSection({
           maxRows={10}
         />
 
-        <ChartCard title="By month" empty={byMonthEmpty}>
-          {!byMonthEmpty ? (
-            <>
-              <TrendLineSvg
-                values={byMonthRows.map((x) => x.value)}
-                strokeClass="text-sky-500"
-              />
-              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                {byMonthRows.slice(0, 8).map((row, i) => (
-                  <span key={`${row.label}-${i}`}>
-                    {row.label}:{" "}
-                    <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                      {fmtMoney(row.value)}
+        <div className="sm:col-span-2 xl:col-span-3">
+          <ChartCard title="By month" empty={byMonthEmpty}>
+            {!byMonthEmpty ? (
+              <>
+                <ByMonthAxisChart
+                  rows={byMonthRows.slice(0, 12)}
+                  currencyCode={computedDefault}
+                />
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                  {byMonthRows.slice(0, 12).map((row, i) => (
+                    <span key={`${row.label}-${i}`}>
+                      {row.label}:{" "}
+                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                        {fmtMoney(row.value)}
+                      </span>
                     </span>
-                  </span>
-                ))}
-              </div>
-            </>
-          ) : null}
-        </ChartCard>
+                  ))}
+                </div>
+              </>
+            ) : null}
+          </ChartCard>
+        </div>
         </div>
       </div>
     </section>

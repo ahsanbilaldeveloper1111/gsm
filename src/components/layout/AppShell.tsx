@@ -1,11 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppTopBar } from "@/components/layout/AppTopBar";
+import { useAuth } from "@/contexts/auth-context";
+import { appPaths } from "@/lib/navigation/appPaths";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { token } = useAuth();
+  const [hydrated, setHydrated] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    // Wait for client hydration before guarding; token is null during SSR snapshot.
+    if (!hydrated) return;
+    if (!token) {
+      router.replace(appPaths.login);
+    }
+  }, [hydrated, token, router]);
 
   return (
     <div className="relative flex min-h-0 flex-1 overflow-hidden">

@@ -33,7 +33,6 @@ export const navigationGroups: NavGroup[] = [
       { label: "Payments", href: appPaths.payments },
       { label: "Expenses", href: appPaths.expenses },
       { label: "Expense categories", href: appPaths.expenseCategories },
-      { label: "Reports", href: appPaths.reports },
       {
         label: "Statement of account",
         href: appPaths.statementOfAccount,

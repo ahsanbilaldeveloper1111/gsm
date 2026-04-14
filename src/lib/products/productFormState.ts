@@ -58,7 +58,7 @@ export function productFormStateFromApiProduct(
 
 export function buildProductMutationPayload(
   f: ProductFormState,
-  isEdit: boolean,
+  _isEdit: boolean,
 ): Record<string, unknown> {
   const base = Number.parseFloat(String(f.base_price).trim() || "0");
   const categoryId =
@@ -75,11 +75,9 @@ export function buildProductMutationPayload(
     is_active: f.is_active,
     currency: f.currency.trim() || "USD",
   };
-  if (isEdit) {
-    body.tenant_id =
-      typeof f.tenant_id === "string" && f.tenant_id.trim()
-        ? f.tenant_id.trim()
-        : null;
-  }
+  body.tenant_id =
+    typeof f.tenant_id === "string" && f.tenant_id.trim()
+      ? f.tenant_id.trim()
+      : null;
   return body;
 }
