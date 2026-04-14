@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CrmCustomerSearchableDropdown } from "@/components/ui/CrmCustomerSearchableDropdown";
+import { TenantSearchableDropdown } from "@/components/ui/TenantSearchableDropdown";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import {
   currenciesFromResponse,
@@ -21,7 +23,6 @@ import {
 } from "@/hooks/products";
 import { useProducts } from "@/hooks/products/useProducts";
 import { usePermissions } from "@/hooks/permissions/usePermissions";
-import { useMainAppResellerNameMap } from "@/hooks/resellers/useMainAppResellerNameMap";
 import { useVendors } from "@/hooks/vendors/useVendors";
 import { extractListRows } from "@/lib/api/extractApiData";
 import {
@@ -143,8 +144,6 @@ export function CreateUpdateInvoiceModal({
     number | null
   >(null);
   const [loadingPrevious, setLoadingPrevious] = useState(false);
-
-  const resellerNameMap = useMainAppResellerNameMap();
 
   const vendorNum = selectedVendorId
     ? Number.parseInt(selectedVendorId, 10)
@@ -404,23 +403,6 @@ export function CreateUpdateInvoiceModal({
     { enabled: open && !isEdit && !!form.tenant_id.trim() },
   );
 
-  const tenantOptions = useMemo(() => {
-    const placeholder = selectedVendorId
-      ? "Select a company…"
-      : "Select a vendor first…";
-    const opts = [{ value: "", label: placeholder }];
-    for (const c of companyRows) {
-      const tid = c.tenant_id != null ? String(c.tenant_id).trim() : "";
-      if (!tid) continue;
-      const label =
-        resellerNameMap[tid] ||
-        (c.name && String(c.name).trim()) ||
-        tid;
-      opts.push({ value: tid, label });
-    }
-    return opts;
-  }, [companyRows, resellerNameMap, selectedVendorId]);
-
   const validate = useCallback((): boolean => {
     const e = getCreateInvoiceValidationErrors(
       {
@@ -673,8 +655,8 @@ export function CreateUpdateInvoiceModal({
                       <span className="mb-1 block text-[11px] font-medium text-zinc-500">
                         Tenant (company) {!isEdit ? "*" : ""}
                       </span>
-                      <select
-                        className={inputClass}
+                      <TenantSearchableDropdown
+                        className="w-full"
                         disabled={
                           loading ||
                           isInvoicePaid ||
@@ -682,22 +664,25 @@ export function CreateUpdateInvoiceModal({
                           !selectedVendorId
                         }
                         value={form.tenant_id}
-                        onChange={(ev) => {
-                          const tenant_id = ev.target.value;
+                        enabled={Boolean(selectedVendorId)}
+                        fetchParams={
+                          Number.isFinite(vendorNum) ? { vendor_id: vendorNum } : undefined
+                        }
+                        placeholder={
+                          selectedVendorId
+                            ? "Select a company…"
+                            : "Select a vendor first…"
+                        }
+                        onChange={(tenant_id) => {
                           setForm((f) => ({
                             ...f,
-                            tenant_id,
+                            tenant_id: tenant_id ?? "",
                             crm_company_id: "",
                           }));
                           setSelectedCustomerDbId(null);
                         }}
-                      >
-                        {tenantOptions.map((o) => (
-                          <option key={o.value || "empty"} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
+                        isClearable
+                      />
                       {errors.tenant_id ? (
                         <p className="mt-1 text-xs text-rose-600">
                           {errors.tenant_id}
@@ -709,42 +694,37 @@ export function CreateUpdateInvoiceModal({
                         <span className="mb-1 block text-[11px] font-medium text-zinc-500">
                           Customer (optional)
                         </span>
-                        <select
-                          className={inputClass}
+                        <CrmCustomerSearchableDropdown
+                          className="w-full"
                           disabled={
                             loading ||
                             isInvoicePaid ||
                             isEdit ||
                             !form.tenant_id.trim()
                           }
-                          value={selectedCustomerDbId ?? ""}
-                          onChange={(ev) => {
-                            const id = ev.target.value
-                              ? Number(ev.target.value)
-                              : null;
-                            setSelectedCustomerDbId(
-                              id != null && Number.isFinite(id) ? id : null,
+                          tenantId={form.tenant_id}
+                          value={form.crm_company_id}
+                          onChange={(crmCompanyId) => {
+                            const nextCrmId = crmCompanyId ?? "";
+                            setForm((f) => ({ ...f, crm_company_id: nextCrmId }));
+                            if (!nextCrmId) {
+                              setSelectedCustomerDbId(null);
+                              return;
+                            }
+                            const matched = customerRows.find(
+                              (c) =>
+                                String(c.crm_company_id ?? "").trim() === nextCrmId,
                             );
-                            const c = customerRows.find((x) => x.id === id);
-                            setForm((f) => ({
-                              ...f,
-                              crm_company_id: c?.crm_company_id
-                                ? String(c.crm_company_id)
-                                : "",
-                            }));
+                            setSelectedCustomerDbId(
+                              matched?.id != null ? Number(matched.id) : null,
+                            );
                           }}
-                        >
-                          <option value="">
-                            {form.tenant_id.trim()
+                          placeholder={
+                            form.tenant_id.trim()
                               ? "Company invoice (no customer)"
-                              : "Select tenant first…"}
-                          </option>
-                          {customerRows.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name ?? `Customer ${c.id}`}
-                            </option>
-                          ))}
-                        </select>
+                              : "Select tenant first…"
+                          }
+                        />
                         <p className="mt-1 text-[11px] text-zinc-500">
                           Select a customer to use customer pricing and profile
                           tax rules.

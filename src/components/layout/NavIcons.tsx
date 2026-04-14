@@ -184,6 +184,17 @@ const icons: Partial<Record<string, ReactNode>> = {
       }
     />
   ),
+  [appPaths.statementOfAccount]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 7h6m0 0v10a2 2 0 01-2 2H9a2 2 0 01-2-2V9a2 2 0 012-2h6zM9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M9 12h6m-6 4h4"
+        />
+      }
+    />
+  ),
   [appPaths.vendors]: (
     <Svg
       path={

@@ -72,3 +72,13 @@ export async function apiGetBlob(
   });
   return data;
 }
+
+export async function apiPostBlob(
+  path: string,
+  body?: unknown,
+): Promise<Blob> {
+  const { data } = await apiClient.post<Blob>(path, body, {
+    responseType: "blob",
+  });
+  return data;
+}

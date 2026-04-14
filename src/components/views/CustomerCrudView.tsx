@@ -6,8 +6,11 @@ import { CreateUpdateCustomerModal } from "@/components/customers/CreateUpdateCu
 import { CustomerListTable } from "@/components/customers/CustomerListTable";
 import { ViewCustomerModal } from "@/components/customers/ViewCustomerModal";
 import { DeleteConfirmationDialog } from "@/components/crud/DeleteConfirmationDialog";
+import { CrmCustomerSearchableDropdown } from "@/components/ui/CrmCustomerSearchableDropdown";
+import { TenantSearchableDropdown } from "@/components/ui/TenantSearchableDropdown";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useTenantDisplayNameMap } from "@/hooks/company/useTenantDisplayNameMap";
+import { useCrmCompanyNameMap } from "@/hooks/crm/useCrmCompanyNameMap";
 import { useCustomerMutations } from "@/hooks/customers/useCustomerMutations";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { usePermissions } from "@/hooks/permissions/usePermissions";
@@ -80,6 +83,7 @@ export function CustomerCrudView() {
   }, [isUserLoading, isSuperAdmin, router]);
 
   const tenantNameMap = useTenantDisplayNameMap();
+  const crmCompanyNameMap = useCrmCompanyNameMap();
 
   const listParams = useMemo((): IndexCustomerParams => {
     const vendorRaw = listState.vendor_id.trim();
@@ -312,40 +316,28 @@ export function CustomerCrudView() {
             <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
               Tenant
             </label>
-            <select
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            <TenantSearchableDropdown
+              className="w-full"
               value={listState.tenant_id}
-              onChange={(e) => {
-                const tid = e.target.value;
+              fetchParams={
+                Number.isFinite(
+                  listState.vendor_id.trim()
+                    ? Number.parseInt(listState.vendor_id, 10)
+                    : NaN,
+                )
+                  ? { vendor_id: Number.parseInt(listState.vendor_id, 10) }
+                  : undefined
+              }
+              onChange={(tid) => {
                 setListState((s) => ({
                   ...s,
-                  tenant_id: tid,
+                  tenant_id: tid ?? "",
                   crm_company_id: "",
                   page: 1,
                 }));
               }}
-            >
-              <option value="">All tenants</option>
-              {tenantRows.map((t) => {
-                const tid =
-                  t.tenant_id != null ? String(t.tenant_id) : "";
-                const label =
-                  (t.name && String(t.name)) ||
-                  tenantNameMap[tid] ||
-                  tid ||
-                  (t.id != null ? `ID ${t.id}` : "—");
-                if (!tid && t.id == null) return null;
-                return (
-                  <option
-                    key={`${tid || t.id}`}
-                    value={tid || String(t.id)}
-                  >
-                    {label}
-                    {tid ? ` (${tid})` : ""}
-                  </option>
-                );
-              })}
-            </select>
+              placeholder="All tenants"
+            />
             <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
               Narrow the tenant list by selecting a vendor first.
             </p>
@@ -354,38 +346,24 @@ export function CustomerCrudView() {
             <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
               Customer
             </label>
-            <select
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900"
+            <CrmCustomerSearchableDropdown
+              className="w-full"
+              tenantId={listState.tenant_id}
               disabled={!listState.tenant_id.trim()}
               value={listState.crm_company_id}
-              onChange={(e) =>
+              onChange={(crmCompanyId) =>
                 setListState((s) => ({
                   ...s,
-                  crm_company_id: e.target.value,
+                  crm_company_id: crmCompanyId ?? "",
                   page: 1,
                 }))
               }
-            >
-              <option value="">All customers</option>
-              {customerPickerRows.map((c, idx) => {
-                const val =
-                  c.crm_company_id != null && String(c.crm_company_id).trim()
-                    ? String(c.crm_company_id).trim()
-                    : c.id != null
-                      ? String(c.id)
-                      : "";
-                if (!val) return null;
-                const lab =
-                  (c.name && String(c.name).trim()) ||
-                  val ||
-                  `Row ${idx + 1}`;
-                return (
-                  <option key={`${val}-${idx}`} value={val}>
-                    {lab}
-                  </option>
-                );
-              })}
-            </select>
+              placeholder={
+                listState.tenant_id.trim()
+                  ? "All customers"
+                  : "Select tenant first…"
+              }
+            />
             <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
               Choose a tenant first to filter by CRM customer.
             </p>
@@ -424,6 +402,7 @@ export function CustomerCrudView() {
         pagination={pagination}
         onPageChange={(page) => setListState((s) => ({ ...s, page }))}
         tenantNameMap={tenantNameMap}
+        crmCompanyNameMap={crmCompanyNameMap}
         canView
         canCreate
         canUpdate

@@ -1,5 +1,5 @@
 import type { ApiSuccessResponse } from "@/lib/api/types";
-import { apiGet, apiPost, type QueryParams } from "@/lib/api/http";
+import { apiGet, apiPost, apiPostBlob, type QueryParams } from "@/lib/api/http";
 import { apiRoutes } from "@/lib/routes/apiRoutes";
 import type { DashboardOverview } from "@/models/Analytics";
 
@@ -22,7 +22,7 @@ export const reportService = {
     apiPost<ApiSuccessResponse<unknown>>(r.customerStatement(), body),
 
   customerStatementDownload: (body: unknown) =>
-    apiPost<ApiSuccessResponse<unknown>>(r.customerStatementDownload(), body),
+    apiPostBlob(r.customerStatementDownload(), body),
 
   paymentHistory: (params?: QueryParams) =>
     apiGet<ApiSuccessResponse<unknown>>(r.paymentHistory(), params),

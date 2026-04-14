@@ -18,6 +18,7 @@ type CustomerListTableProps = {
   pagination: ApiPagination | undefined;
   onPageChange: (page: number) => void;
   tenantNameMap: Record<string, string>;
+  crmCompanyNameMap: Record<string, string>;
   canView: boolean;
   canCreate: boolean;
   canUpdate: boolean;
@@ -59,6 +60,7 @@ export function CustomerListTable({
   pagination,
   onPageChange,
   tenantNameMap,
+  crmCompanyNameMap,
   canView,
   canCreate,
   canUpdate,
@@ -150,6 +152,9 @@ export function CustomerListTable({
                   </th>
                 ))}
                 <th className="whitespace-nowrap px-3 py-2 font-semibold text-zinc-700 dark:text-zinc-200">
+                  CRM company
+                </th>
+                <th className="whitespace-nowrap px-3 py-2 font-semibold text-zinc-700 dark:text-zinc-200">
                   Tenant
                 </th>
                 <th className="whitespace-nowrap px-3 py-2 font-semibold text-zinc-700 dark:text-zinc-200">
@@ -164,7 +169,7 @@ export function CustomerListTable({
               {customers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-8 text-center text-sm text-zinc-500"
                   >
                     No customers match the current filters.
@@ -174,10 +179,14 @@ export function CustomerListTable({
                 customers.map((c, idx) => {
                   const tid =
                     c.tenant_id != null ? String(c.tenant_id).trim() : "";
-                  const tenantLabel =
-                    tid && tenantNameMap[tid]?.trim()
-                      ? tenantNameMap[tid]
-                      : tid || "—";
+                  const tenantName =
+                    tid && tenantNameMap[tid]?.trim() ? tenantNameMap[tid] : "";
+                  const crmId =
+                    c.crm_company_id != null ? String(c.crm_company_id).trim() : "";
+                  const crmName =
+                    crmId && crmCompanyNameMap[crmId]?.trim()
+                      ? crmCompanyNameMap[crmId]
+                      : "";
                   return (
                     <tr
                       key={c.crm_company_id ?? c.id ?? idx}
@@ -193,7 +202,28 @@ export function CustomerListTable({
                         {c.phone ?? "—"}
                       </td>
                       <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">
-                        {tenantLabel}
+                        {crmId ? (
+                          <div>
+                            <p>{crmName || crmId}</p>
+                            {crmName && crmName !== crmId ? (
+                              <p className="text-[11px] text-zinc-500">{crmId}</p>
+                            ) : null}
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">
+                        {tid ? (
+                          <div>
+                            <p>{tenantName || tid}</p>
+                            {tenantName && tenantName !== tid ? (
+                              <p className="text-[11px] text-zinc-500">{tid}</p>
+                            ) : null}
+                          </div>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td className="px-3 py-2 text-zinc-800 dark:text-zinc-200">
                         {c.invoices_count ?? 0}

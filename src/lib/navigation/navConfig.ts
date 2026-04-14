@@ -4,6 +4,7 @@ import { appPaths } from "@/lib/navigation/appPaths";
 export type NavItem = {
   label: string;
   href: AppPath;
+  /** Shown under the label in the sidebar (muted). */
   description?: string;
 };
 
@@ -33,6 +34,11 @@ export const navigationGroups: NavGroup[] = [
       { label: "Expenses", href: appPaths.expenses },
       { label: "Expense categories", href: appPaths.expenseCategories },
       { label: "Reports", href: appPaths.reports },
+      {
+        label: "Statement of account",
+        href: appPaths.statementOfAccount,
+        description: "Activity, balances & PDF",
+      },
       { label: "Currencies", href: appPaths.currencies },
     ],
   },

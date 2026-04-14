@@ -19,6 +19,7 @@ export const appPathToModule: Partial<Record<AppPath, ModuleName>> = {
   [appPaths.productCategories]: ModuleName.PRODUCT_CATEGORY,
   [appPaths.currencies]: ModuleName.CURRENCY,
   [appPaths.reports]: ModuleName.GLOBAL,
+  [appPaths.statementOfAccount]: ModuleName.GLOBAL,
   [appPaths.vendors]: ModuleName.VENDOR,
   [appPaths.ranks]: ModuleName.RANK,
   [appPaths.crm]: ModuleName.CUSTOMER,

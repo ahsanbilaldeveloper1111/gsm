@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { CrudEntityTable } from "@/components/crud/CrudEntityTable";
 import { RecordDetailModal } from "@/components/crud/RecordDetailModal";
+import { CrmCustomerSearchableDropdown } from "@/components/ui/CrmCustomerSearchableDropdown";
+import { TenantSearchableDropdown } from "@/components/ui/TenantSearchableDropdown";
 import { usePayment } from "@/hooks/payments/usePayment";
 import { usePayments } from "@/hooks/payments/usePayments";
 import type { PaymentStatus } from "@/models/Payment";
@@ -168,20 +170,30 @@ export function PaymentListView() {
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Tenant ID
             </label>
-            <input
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            <TenantSearchableDropdown
+              className="w-full"
               value={tenantId}
-              onChange={(ev) => setTenantId(ev.target.value)}
+              onChange={(nextTenant) => {
+                setTenantId(nextTenant ?? "");
+                setCrmCompanyId("");
+              }}
+              placeholder="All tenants"
             />
           </div>
           <div>
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               CRM company ID
             </label>
-            <input
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            <CrmCustomerSearchableDropdown
+              className="w-full"
+              tenantId={tenantId}
               value={crmCompanyId}
-              onChange={(ev) => setCrmCompanyId(ev.target.value)}
+              onChange={(nextCrmCompanyId) =>
+                setCrmCompanyId(nextCrmCompanyId ?? "")
+              }
+              placeholder={
+                tenantId.trim() ? "All CRM customers" : "Select tenant first…"
+              }
             />
           </div>
           <div>

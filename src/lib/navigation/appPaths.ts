@@ -17,6 +17,7 @@ export const appPaths = {
   productCategories: "/product-categories",
   currencies: "/currencies",
   reports: "/reports",
+  statementOfAccount: "/statement-of-account",
   vendors: "/vendors",
   ranks: "/ranks",
   crm: "/crm",

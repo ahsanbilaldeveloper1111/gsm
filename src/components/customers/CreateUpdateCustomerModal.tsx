@@ -3,9 +3,8 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { CustomerPaymentCardsEditor } from "@/components/customers/CustomerPaymentCardsEditor";
+import { TenantSearchableDropdown } from "@/components/ui/TenantSearchableDropdown";
 import { useCrmCompanies } from "@/hooks/crm/useCrmCompanies";
-import { useCompanies } from "@/hooks/company/useCompanies";
-import { useTenantDisplayNameMap } from "@/hooks/company/useTenantDisplayNameMap";
 import { useCustomer } from "@/hooks/customers/useCustomer";
 import { useCustomerMutations } from "@/hooks/customers/useCustomerMutations";
 import {
@@ -19,7 +18,7 @@ import {
   showAppToast,
   showBillingBackendErrorToast,
 } from "@/lib/toast/appToast";
-import type { Company, IndexCompanyParams } from "@/models/Company";
+import type { Company } from "@/models/Company";
 import type { CreateCustomerData, Customer, CustomerProfile } from "@/models/Customer";
 
 const inputClass =
@@ -155,7 +154,6 @@ export function CreateUpdateCustomerModal({
 }: CreateUpdateCustomerModalProps) {
   const isEdit = customerId != null;
   const mutations = useCustomerMutations();
-  const tenantNameMap = useTenantDisplayNameMap();
 
   const [formData, setFormData] = useState(() => emptyForm());
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -166,14 +164,6 @@ export function CreateUpdateCustomerModal({
   });
 
   const currentCustomer = unwrapApiSuccessData<Customer>(detailQuery.data);
-
-  const companiesQuery = useCompanies(
-    { page: 1, limit: 500 } as IndexCompanyParams,
-    { enabled: open },
-  );
-  const companyRows = extractListRows<Company & Record<string, unknown>>(
-    companiesQuery.data,
-  ).rows;
 
   const crmListParams = useMemo(
     () => ({
@@ -362,12 +352,11 @@ export function CreateUpdateCustomerModal({
                       <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
                         Tenant {!isEdit ? "*" : ""}
                       </label>
-                      <select
-                        className={inputClass}
-                        disabled={isEdit || companiesQuery.isPending}
-                        value={formData.tenant_id ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value || null;
+                      <TenantSearchableDropdown
+                        value={formData.tenant_id ?? null}
+                        disabled={isEdit}
+                        isClearable={!isEdit}
+                        onChange={(v) => {
                           setFormData((prev) => ({
                             ...prev,
                             tenant_id: v,
@@ -376,31 +365,7 @@ export function CreateUpdateCustomerModal({
                           if (errors.tenant_id)
                             setErrors((prev) => ({ ...prev, tenant_id: "" }));
                         }}
-                      >
-                        <option value="">
-                          {companiesQuery.isPending
-                            ? "Loading companies…"
-                            : "Select a tenant…"}
-                        </option>
-                        {companyRows.map((co) => {
-                          const tid =
-                            co.tenant_id != null ? String(co.tenant_id) : "";
-                          const label =
-                            (co.name && String(co.name)) ||
-                            tenantNameMap[tid] ||
-                            tid ||
-                            (co.id != null ? `ID ${co.id}` : "");
-                          if (!tid && co.id == null) return null;
-                          return (
-                            <option
-                              key={`${tid || co.id}`}
-                              value={tid || String(co.id)}
-                            >
-                              {label || tid}
-                            </option>
-                          );
-                        })}
-                      </select>
+                      />
                       <FieldError message={errors.tenant_id} />
                     </div>
                     <div className="sm:col-span-2">

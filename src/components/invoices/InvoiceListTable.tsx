@@ -73,10 +73,25 @@ function statusBadgeClasses(status: InvoiceStatus | string): string {
   return map[status] ?? "bg-zinc-200 text-zinc-800 dark:bg-zinc-700";
 }
 
-function billToLabel(inv: Invoice): string {
+function billToLabel(
+  inv: Invoice,
+  tenantDisplayNameById: Record<string, string>,
+  crmCompanyNameById: Record<string, string>,
+): string {
   const customerName = inv.customer?.name ?? inv.customer?.email;
   if (customerName) return String(customerName);
-  return inv.company?.name ?? inv.tenant_id ?? "—";
+  const crmId =
+    inv.crm_company_id != null && String(inv.crm_company_id).trim() !== ""
+      ? String(inv.crm_company_id).trim()
+      : "";
+  if (crmId && crmCompanyNameById[crmId]?.trim()) return crmCompanyNameById[crmId];
+  if (inv.company?.name) return inv.company.name;
+  const tid =
+    inv.tenant_id != null && String(inv.tenant_id).trim() !== ""
+      ? String(inv.tenant_id).trim()
+      : "";
+  if (tid && tenantDisplayNameById[tid]?.trim()) return tenantDisplayNameById[tid];
+  return tid || "—";
 }
 
 type InvoiceListTableProps = {
@@ -90,6 +105,8 @@ type InvoiceListTableProps = {
   onDelete: (id: number | string) => void;
   pagination: ApiPagination | undefined;
   onPageChange: (page: number) => void;
+  tenantDisplayNameById?: Record<string, string>;
+  crmCompanyNameById?: Record<string, string>;
 };
 
 export function InvoiceListTable({
@@ -103,8 +120,24 @@ export function InvoiceListTable({
   onDelete,
   pagination,
   onPageChange,
+  tenantDisplayNameById = {},
+  crmCompanyNameById = {},
 }: InvoiceListTableProps) {
-  if (query.isPending) {
+  if (query.isError) {
+    return (
+      <div
+        className="rounded-2xl border border-rose-200/90 bg-gradient-to-br from-rose-50 to-white p-5 text-sm text-rose-900 shadow-sm dark:border-rose-900/50 dark:from-rose-950/40 dark:to-zinc-950 dark:text-rose-100"
+        role="alert"
+      >
+        <p className="font-semibold">Request failed</p>
+        <p className="mt-2 font-mono text-xs opacity-90">{String(query.error)}</p>
+      </div>
+    );
+  }
+
+  // TanStack Query v5: disabled queries stay `isPending` without fetching — use
+  // `isLoading` / `isPaused` so we don't show a perpetual skeleton (e.g. JWT not ready yet).
+  if (query.isLoading || query.isPaused) {
     return (
       <div className="space-y-3 rounded-2xl border border-zinc-200/60 bg-white/50 p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
         {[1, 2, 3, 4, 5].map((i) => (
@@ -114,18 +147,6 @@ export function InvoiceListTable({
             style={{ width: `${100 - i * 12}%` }}
           />
         ))}
-      </div>
-    );
-  }
-
-  if (query.isError) {
-    return (
-      <div
-        className="rounded-2xl border border-rose-200/90 bg-gradient-to-br from-rose-50 to-white p-5 text-sm text-rose-900 shadow-sm dark:border-rose-900/50 dark:from-rose-950/40 dark:to-zinc-950 dark:text-rose-100"
-        role="alert"
-      >
-        <p className="font-semibold">Request failed</p>
-        <p className="mt-2 font-mono text-xs opacity-90">{String(query.error)}</p>
       </div>
     );
   }
@@ -253,7 +274,7 @@ export function InvoiceListTable({
                       </td>
                       {isSuperAdmin ? (
                         <td className="px-3 py-2">
-                          {inv.crm_company_id && inv.customer ? (
+                          {inv.crm_company_id ? (
                             <span className="rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-sky-900 dark:bg-sky-900/40 dark:text-sky-100">
                               Customer
                             </span>
@@ -266,9 +287,17 @@ export function InvoiceListTable({
                       ) : null}
                       <td
                         className="max-w-[12rem] truncate px-3 py-2 text-zinc-800 dark:text-zinc-200"
-                        title={billToLabel(inv)}
+                        title={billToLabel(
+                          inv,
+                          tenantDisplayNameById,
+                          crmCompanyNameById,
+                        )}
                       >
-                        {billToLabel(inv)}
+                        {billToLabel(
+                          inv,
+                          tenantDisplayNameById,
+                          crmCompanyNameById,
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2">
                         {formatShortDate(inv.invoice_date)}

@@ -34,6 +34,19 @@ import {
 
 const LIMIT_OPTIONS = [10, 20, 25, 50, 100] as const;
 
+type AddPricingItemPayload = {
+  product_id: number;
+  selling_price: number;
+  discount_applicability_id: number | null;
+  custom_description: string | null;
+  is_active: boolean;
+  renewal_start_date: string | null;
+  renewal_end_date: string | null;
+  status: string | null;
+  billing_cycle: string | null;
+  subscriptions: number;
+};
+
 function calculateFinalPrice(row: ProductPricingRow): number {
   const base = row.selling_price;
   const d = row.discount_applicability;
@@ -86,13 +99,15 @@ export function CustomerProductPricingView({
     null,
   );
 
-  const [addProductId, setAddProductId] = useState("");
-  const [addSellingPrice, setAddSellingPrice] = useState("");
-
   const customerQuery = useCustomer(trimmed || null, { load_profile: true });
   const customer = unwrapApiSuccessData<Customer>(customerQuery.data);
   const companyDefaultCurrency = customer?.profile?.currency ?? "USD";
   const customerName = customer?.name ?? "Customer";
+  const customerTenantId =
+    customer?.tenant_id != null && String(customer.tenant_id).trim() !== ""
+      ? String(customer.tenant_id).trim()
+      : "";
+  const hasTenantId = customerTenantId.length > 0;
 
   const listParams = useMemo(
     () => ({
@@ -113,9 +128,10 @@ export function CustomerProductPricingView({
   const mutations = useCustomerProductPricingMutations(trimmed);
 
   const productsQuery = useProducts({
+    tenant_id: customerTenantId,
     page: 1,
     limit: 500,
-  });
+  }, { enabled: hasTenantId });
   const catalogRows = extractListRows<Product & Record<string, unknown>>(
     productsQuery.data,
   ).rows;
@@ -283,23 +299,19 @@ export function CustomerProductPricingView({
     }
   };
 
-  const submitAddPricing = async () => {
-    const pid = Number.parseInt(addProductId, 10);
-    const price = Number.parseFloat(addSellingPrice);
-    if (!Number.isFinite(pid) || !Number.isFinite(price)) {
-      showAppToast("Select a product and valid price.", "warning");
+  const submitAddPricing = async (
+    pricingData: AddPricingItemPayload[],
+  ) => {
+    if (pricingData.length === 0) {
+      showAppToast("Select at least one product.", "warning");
       return;
     }
     try {
-      await mutations.updateProductPricing.mutateAsync({
-        product_id: pid,
-        selling_price: price,
-        is_active: true,
+      await mutations.bulkUpdateProductPricing.mutateAsync({
+        pricing_data: pricingData,
       });
       showAppToast("Product pricing added.", "success");
       setShowAddPricing(false);
-      setAddProductId("");
-      setAddSellingPrice("");
     } catch (error: unknown) {
       showBillingBackendErrorToast(error);
     }
@@ -388,41 +400,46 @@ export function CustomerProductPricingView({
         </div>
       </div>
 
-      <>
-          <div className="flex flex-wrap gap-2">
-            {allowUpdate ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowAddPricing(true)}
-                  className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
-                >
-                  Add pricing
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowBulk(true)}
-                  disabled={selected.size === 0}
-                  className="rounded-xl border border-zinc-200 px-3 py-2 text-sm font-medium disabled:opacity-50 dark:border-zinc-600"
-                >
-                  Bulk discount ({selected.size})
-                </button>
-              </>
-            ) : null}
-            <input
-              type="search"
-              placeholder="Search…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="min-w-[12rem] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            />
-          </div>
+      <div className="flex flex-wrap gap-2">
+        {allowUpdate ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowAddPricing(true)}
+              disabled={!hasTenantId}
+              className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+            >
+              Add pricing
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBulk(true)}
+              disabled={selected.size === 0}
+              className="rounded-xl border border-zinc-200 px-3 py-2 text-sm font-medium disabled:opacity-50 dark:border-zinc-600"
+            >
+              Bulk discount ({selected.size})
+            </button>
+          </>
+        ) : null}
+        <input
+          type="search"
+          placeholder="Search…"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="min-w-[12rem] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        />
+      </div>
+      {!hasTenantId ? (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          This customer has no tenant ID, so product catalog selection is unavailable.
+        </p>
+      ) : null}
 
-          <div className="overflow-x-auto rounded-2xl border border-zinc-200/80 dark:border-zinc-800">
-            <table className="w-full min-w-[72rem] border-collapse text-left text-sm">
+      <div className="overflow-x-auto rounded-2xl border border-zinc-200/80 dark:border-zinc-800">
+        <table className="w-full min-w-[72rem] border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-50/90 text-xs uppercase text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/60">
                   <th className="px-2 py-2">
@@ -461,13 +478,13 @@ export function CustomerProductPricingView({
               <tbody>
                 {listQuery.isPending ? (
                   <tr>
-                    <td colSpan={12} className="px-4 py-8 text-center text-zinc-500">
+                    <td colSpan={13} className="px-4 py-8 text-center text-zinc-500">
                       Loading…
                     </td>
                   </tr>
                 ) : productsList.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="px-4 py-8 text-center text-zinc-500">
+                    <td colSpan={13} className="px-4 py-8 text-center text-zinc-500">
                       No product pricing rows yet.
                     </td>
                   </tr>
@@ -733,55 +750,54 @@ export function CustomerProductPricingView({
                   })
                 )}
               </tbody>
-            </table>
-          </div>
+        </table>
+      </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-zinc-500">Rows per page</span>
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="rounded-lg border border-zinc-200 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
-              >
-                {LIMIT_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-lg border border-zinc-200 px-3 py-1 disabled:opacity-50 dark:border-zinc-600"
-              >
-                Previous
-              </button>
-              <span className="text-zinc-600">
-                Page {pagination?.page ?? page}
-                {pagination?.last_page != null
-                  ? ` / ${pagination.last_page}`
-                  : ""}
-              </span>
-              <button
-                type="button"
-                disabled={
-                  pagination?.last_page != null && page >= pagination.last_page
-                }
-                onClick={() => setPage((p) => p + 1)}
-                className="rounded-lg border border-zinc-200 px-3 py-1 disabled:opacity-50 dark:border-zinc-600"
-              >
-                Next
-              </button>
-            </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-zinc-500">Rows per page</span>
+          <select
+            value={limit}
+            onChange={(e) => {
+              setLimit(Number(e.target.value));
+              setPage(1);
+            }}
+            className="rounded-lg border border-zinc-200 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+          >
+            {LIMIT_OPTIONS.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="rounded-lg border border-zinc-200 px-3 py-1 disabled:opacity-50 dark:border-zinc-600"
+          >
+            Previous
+          </button>
+          <span className="text-zinc-600">
+            Page {pagination?.page ?? page}
+            {pagination?.last_page != null
+              ? ` / ${pagination.last_page}`
+              : ""}
+          </span>
+          <button
+            type="button"
+            disabled={
+              pagination?.last_page != null && page >= pagination.last_page
+            }
+            onClick={() => setPage((p) => p + 1)}
+            className="rounded-lg border border-zinc-200 px-3 py-1 disabled:opacity-50 dark:border-zinc-600"
+          >
+            Next
+          </button>
           </div>
-        </>
+      </div>
       <BulkUpdateModal
         open={showBulk}
         onClose={() => setShowBulk(false)}
@@ -807,11 +823,8 @@ export function CustomerProductPricingView({
         open={showAddPricing}
         onClose={() => setShowAddPricing(false)}
         products={catalogRows}
-        productId={addProductId}
-        onProductIdChange={setAddProductId}
-        sellingPrice={addSellingPrice}
-        onSellingPriceChange={setAddSellingPrice}
-        onSubmit={() => void submitAddPricing()}
+        discountOptions={availableDiscounts}
+        onSubmit={(data) => void submitAddPricing(data)}
         busy={mutations.updateProductPricing.isPending}
       />
     </div>

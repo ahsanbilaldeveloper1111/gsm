@@ -6,8 +6,9 @@ import { DeleteConfirmationDialog } from "@/components/crud/DeleteConfirmationDi
 import { CreateUpdateInvoiceModal } from "@/components/invoices/CreateUpdateInvoiceModal";
 import { InvoiceDetailModal } from "@/components/invoices/InvoiceDetailModal";
 import { InvoiceListTable } from "@/components/invoices/InvoiceListTable";
-import { useCompanies } from "@/hooks/company/useCompanies";
-import { useCustomers } from "@/hooks/customers/useCustomers";
+import { CrmCustomerSearchableDropdown } from "@/components/ui/CrmCustomerSearchableDropdown";
+import { TenantSearchableDropdown } from "@/components/ui/TenantSearchableDropdown";
+import { useCrmCompanyNameMap } from "@/hooks/crm/useCrmCompanyNameMap";
 import { useInvoiceMutations } from "@/hooks/invoices/useInvoiceMutations";
 import { useInvoices } from "@/hooks/invoices/useInvoices";
 import { usePermissions } from "@/hooks/permissions/usePermissions";
@@ -26,7 +27,7 @@ import {
   showBillingBackendErrorToast,
 } from "@/lib/toast/appToast";
 import type { IndexInvoiceParams, InvoiceStatus } from "@/models/Invoice";
-import type { Customer } from "@/models/Customer";
+import { useMainAppResellerNameMap } from "@/hooks/resellers/useMainAppResellerNameMap";
 
 const INVOICE_STATUS_OPTIONS: InvoiceStatus[] = [
   "draft",
@@ -170,36 +171,9 @@ export function InvoiceCrudView() {
   const vendorIdNum = listState.vendor_id.trim()
     ? Number.parseInt(listState.vendor_id, 10)
     : NaN;
-  const companiesQuery = useCompanies(
-    Number.isFinite(vendorIdNum)
-      ? {
-          limit: 1000,
-          load_profile: true,
-          vendor_id: vendorIdNum,
-        }
-      : undefined,
-    { enabled: Number.isFinite(vendorIdNum) },
-  );
-  const companyRows = extractListRows(companiesQuery.data).rows as {
-    tenant_id?: string | null;
-    name?: string;
-    id?: number;
-  }[];
+  const tenantDisplayNameById = useMainAppResellerNameMap();
+  const crmCompanyNameById = useCrmCompanyNameMap();
 
-  const customersQuery = useCustomers(
-    isSuperAdmin && listState.tenant_id.trim()
-      ? {
-          limit: 500,
-          load_profile: true,
-          tenant_id: listState.tenant_id.trim(),
-        }
-      : undefined,
-    {
-      enabled: isSuperAdmin && !!listState.tenant_id.trim(),
-    },
-  );
-  const customerRows = extractListRows(customersQuery.data)
-    .rows as unknown as Customer[];
 
   const currenciesQuery = useActiveCurrencies();
   const currencyOptions = useMemo(() => {
@@ -268,19 +242,7 @@ export function InvoiceCrudView() {
     [listQuery.data, deleteId],
   );
 
-  const tenantDisplayNameById = useMemo(() => {
-    const o: Record<string, string> = {};
-    for (const c of companyRows) {
-      const tid =
-        c.tenant_id != null && String(c.tenant_id).trim() !== ""
-          ? String(c.tenant_id).trim()
-          : c.id != null
-            ? String(c.id)
-            : "";
-      if (tid && c.name) o[tid] = c.name;
-    }
-    return o;
-  }, [companyRows]);
+  
 
   const openCreate = () => {
     setEditId(null);
@@ -360,69 +322,52 @@ export function InvoiceCrudView() {
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Tenant (company)
             </label>
-            <select
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900"
+            <TenantSearchableDropdown
+              className="w-full"
               disabled={!Number.isFinite(vendorIdNum)}
               value={listState.tenant_id}
-              onChange={(ev) => {
-                const tenant_id = ev.target.value;
+              enabled={Number.isFinite(vendorIdNum)}
+              fetchParams={
+                Number.isFinite(vendorIdNum) ? { vendor_id: vendorIdNum } : undefined
+              }
+              onChange={(tenant_id) => {
                 setListState((s) => ({
                   ...s,
                   page: 1,
-                  tenant_id,
+                  tenant_id: tenant_id ?? "",
                   crm_company_id: "",
                 }));
               }}
-            >
-              <option value="">
-                {Number.isFinite(vendorIdNum)
+              placeholder={
+                Number.isFinite(vendorIdNum)
                   ? "All tenants"
-                  : "Select vendor first…"}
-              </option>
-              {companyRows.map((c) => {
-                const tid = String(c.tenant_id ?? c.id ?? "");
-                if (!tid) return null;
-                return (
-                  <option key={tid} value={tid}>
-                    {c.name ?? tid}
-                  </option>
-                );
-              })}
-            </select>
+                  : "Select vendor first…"
+              }
+            />
           </div>
           {isSuperAdmin ? (
             <div>
               <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 Customer (CRM)
               </label>
-              <select
-                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900"
+              <CrmCustomerSearchableDropdown
+                className="w-full"
+                tenantId={listState.tenant_id}
                 disabled={!listState.tenant_id.trim()}
                 value={listState.crm_company_id}
-                onChange={(ev) =>
+                onChange={(crmCompanyId) =>
                   setListState((s) => ({
                     ...s,
                     page: 1,
-                    crm_company_id: ev.target.value,
+                    crm_company_id: crmCompanyId ?? "",
                   }))
                 }
-              >
-                <option value="">
-                  {listState.tenant_id.trim()
+                placeholder={
+                  listState.tenant_id.trim()
                     ? "All customers"
-                    : "Select tenant first…"}
-                </option>
-                {customerRows.map((cu) => {
-                  const cid =
-                    cu.crm_company_id ?? cu.profile?.crm_company_id ?? "";
-                  if (!cid) return null;
-                  return (
-                    <option key={cu.id} value={cid}>
-                      {cu.name ?? cid}
-                    </option>
-                  );
-                })}
-              </select>
+                    : "Select tenant first…"
+                }
+              />
             </div>
           ) : null}
           <div>
@@ -635,6 +580,8 @@ export function InvoiceCrudView() {
         title="Invoices"
         displayCurrencyCode={listState.display_currency}
         isSuperAdmin={isSuperAdmin}
+        tenantDisplayNameById={tenantDisplayNameById}
+        crmCompanyNameById={crmCompanyNameById}
         pagination={pagination}
         onPageChange={(page) => setListState((s) => ({ ...s, page }))}
         onCreate={openCreate}

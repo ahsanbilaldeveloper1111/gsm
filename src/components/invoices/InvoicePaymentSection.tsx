@@ -200,6 +200,8 @@ function InvoicePaymentInner({
     }
     inFlight.current = true;
     setBusy(true);
+    const remainingAfterPayment = Math.max(0, outstanding - paymentAmount);
+    const isPartialPayment = remainingAfterPayment > 0.001;
     try {
       if (files.length > 0) {
         const fd = new FormData();
@@ -230,7 +232,17 @@ function InvoicePaymentInner({
             `Manual payment for invoice ${invoice.invoice_number}`,
         });
       }
-      showAppToast("Manual payment recorded.", "success");
+      if (isPartialPayment) {
+        showAppToast(
+          `Manual payment recorded. Remaining amount to pay: ${formatCurrency(
+            remainingAfterPayment,
+            invoice.currency_code,
+          )}.`,
+          "success",
+        );
+      } else {
+        showAppToast("Manual payment recorded. Invoice fully paid.", "success");
+      }
       setRefNum("");
       setNotes("");
       setFiles([]);

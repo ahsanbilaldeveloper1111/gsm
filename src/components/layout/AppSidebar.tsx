@@ -13,10 +13,12 @@ import { usePermissions } from "@/hooks/permissions/usePermissions";
 function NavLink({
   href,
   label,
+  description,
   onNavigate,
 }: {
   href: string;
   label: string;
+  description?: string;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
@@ -56,7 +58,20 @@ function NavLink({
       }`}
     >
       <NavIcon href={href} active={active} />
-      <span className="truncate">{label}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate leading-snug">{label}</span>
+        {description ? (
+          <span
+            className={`mt-0.5 block truncate text-[10px] font-normal leading-tight ${
+              active
+                ? "text-emerald-900/65 dark:text-emerald-100/65"
+                : "text-zinc-400 dark:text-zinc-500"
+            }`}
+          >
+            {description}
+          </span>
+        ) : null}
+      </span>
     </Link>
   );
 }
@@ -107,6 +122,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
                     <NavLink
                       href={item.href}
                       label={item.label}
+                      description={item.description}
                       onNavigate={onNavigate}
                     />
                   </li>

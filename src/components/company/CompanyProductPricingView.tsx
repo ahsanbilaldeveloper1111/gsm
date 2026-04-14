@@ -102,8 +102,6 @@ export function CompanyProductPricingView({
     null,
   );
 
-  const [addProductId, setAddProductId] = useState("");
-  const [addSellingPrice, setAddSellingPrice] = useState("");
   const [discType, setDiscType] = useState<"percentage" | "amount">(
     "percentage",
   );
@@ -319,23 +317,30 @@ export function CompanyProductPricingView({
     }
   };
 
-  const submitAddPricing = async () => {
-    const pid = Number.parseInt(addProductId, 10);
-    const price = Number.parseFloat(addSellingPrice);
-    if (!Number.isFinite(pid) || !Number.isFinite(price)) {
-      showAppToast("Select a product and valid price.", "warning");
+  const submitAddPricing = async (
+    pricingData: Array<{
+      product_id: number;
+      selling_price: number;
+      discount_applicability_id: number | null;
+      custom_description: string | null;
+      is_active: boolean;
+      renewal_start_date: string | null;
+      renewal_end_date: string | null;
+      status: string | null;
+      billing_cycle: string | null;
+      subscriptions: number;
+    }>,
+  ) => {
+    if (pricingData.length === 0) {
+      showAppToast("Select at least one product.", "warning");
       return;
     }
     try {
-      await mutations.updateProductPricing.mutateAsync({
-        product_id: pid,
-        selling_price: price,
-        is_active: true,
+      await mutations.bulkUpdateProductPricing.mutateAsync({
+        pricing_data: pricingData,
       });
       showAppToast("Product pricing added.", "success");
       setShowAddPricing(false);
-      setAddProductId("");
-      setAddSellingPrice("");
     } catch (error: unknown) {
       showBillingBackendErrorToast(error);
     }
@@ -954,11 +959,8 @@ export function CompanyProductPricingView({
         open={showAddPricing}
         onClose={() => setShowAddPricing(false)}
         products={catalogRows}
-        productId={addProductId}
-        onProductIdChange={setAddProductId}
-        sellingPrice={addSellingPrice}
-        onSellingPriceChange={setAddSellingPrice}
-        onSubmit={() => void submitAddPricing()}
+        discountOptions={discountRows}
+        onSubmit={(data) => void submitAddPricing(data)}
         busy={mutations.updateProductPricing.isPending}
       />
 

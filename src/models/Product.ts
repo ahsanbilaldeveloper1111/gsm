@@ -69,6 +69,7 @@ export interface ProductShowDiscountApplicabilityRow {
 
 /** `GET /api/backend/products` — filters + `order[column]` / `order[dir]`. */
 export interface IndexProductParams {
+  tenant_id?: string|null;
   page?: number;
   limit?: number;
   search?: string;
