@@ -2,7 +2,7 @@
  * Public billing backend routes (no JWT). Browser may still send a stored Bearer token;
  * the API should ignore it for these paths.
  *
- * Paths are resolved under `getBillingBackendPublicApiBaseUrl()` (`/api` by default), not `/api/backend`.
+ * Paths are relative to the same `/api` Next proxy as authenticated traffic.
  */
 import { resolvePublicBillingApiUrl } from "@/lib/env";
 import { apiGet, apiPost, type QueryParams } from "@/lib/api/http";

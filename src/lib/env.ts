@@ -1,16 +1,21 @@
 /**
  * Billing backend API URLs:
  * - Prefer `NEXT_PUBLIC_BILLING_BACKEND_URL` (origin only, no path), e.g. `https://your-host`
- *   → server-side API base = `{origin}/api/backend` (Sanctum-protected routes).
+ *   → upstream JSON base = `{origin}/api`.
  * - Legacy: `NEXT_PUBLIC_LARAVEL_API_URL` (same shape) if the new name is not set.
- * - Legacy: `NEXT_PUBLIC_API_BASE_URL` = `https://host/api` → same as `{origin}/api/backend` after normalization.
+ * - Legacy: `NEXT_PUBLIC_API_BASE_URL` = `https://host/api` (full API root) or origin-only.
  *
- * **Browser and Node (SSR / services):** The billing backend is reached only via this app’s Route Handlers
- * (`/api/billing-backend`, `/api/billing-api`, `/sanctum/csrf-cookie`). Server-side Axios uses
- * `getInternalNextOrigin()` + those paths so TLS to the backend stays in `proxyRequestToUrl` (`API_TLS_INSECURE`).
- * Set `INTERNAL_NEXT_ORIGIN` in Docker/K8s (e.g. `http://frontend:3000`) when the server must not use localhost.
+ * **Browser:** By default (`NEXT_PUBLIC_API_SAME_ORIGIN_PROXY=1`) all API calls go to **this Next app**
+ * at `/api/...` (same origin as the UI). The Route Handler forwards to Laravel — no browser CORS to Laravel.
+ * Set `NEXT_PUBLIC_API_SAME_ORIGIN_PROXY=0` only if the browser must call Laravel’s URL directly (then configure CORS on Laravel).
  *
- * Token bootstrap (`/api/get-token`, refresh, …) lives under `/api` by default; override with `API_TOKEN_BOOTSTRAP_BASE_URL`.
+ * **Server-side Axios:** With same-origin proxy, uses `getInternalNextOrigin()` + `/api` (loopback through Next).
+ * With `NEXT_PUBLIC_API_SAME_ORIGIN_PROXY=0`, uses `getServerApiBaseUrl()` (direct to Laravel from Node).
+ *
+ * **Upstream for the proxy:** `API_BASE_URL` or `LARAVEL_UPSTREAM_ORIGIN` + `/api` (see `getServerApiBaseUrl`).
+ * TLS from Node to Laravel: `API_TLS_INSECURE` + `proxyRequestToUrl`. Set `INTERNAL_NEXT_ORIGIN` in Docker/K8s when needed.
+ *
+ * Token bootstrap (`/api/get-token`, refresh, …) uses the same `/api` base unless overridden with `API_TOKEN_BOOTSTRAP_BASE_URL`.
  *
  * TLS: `ERR_CERT_COMMON_NAME_INVALID` in the browser means the certificate does not match the hostname/IP
  * you typed (not fixable in JS). Use `http://` on a trusted LAN, use the cert’s hostname, or reissue TLS with
@@ -18,11 +23,23 @@
  * `1`, `true`, `yes`, or `on` (see `instrumentation.ts` + `getBillingBackendHttpsAgent()`).
  */
 
-/** Next.js proxy → upstream `/api/backend/*`. */
-export const BILLING_BACKEND_PROXY_BASE = "/api/billing-backend";
+/** Next.js same-origin prefix; proxies to Laravel `{origin}/api/*`. */
+export const BILLING_BACKEND_PROXY_BASE = "/api";
 
-/** Next.js proxy → upstream `/api/*` (outside `/api/backend`). */
-export const BILLING_API_PROXY_BASE = "/api/billing-api";
+/**
+ * When true (default), the SPA calls **this Next app** at `/api` (same origin), not the Laravel host in the browser.
+ * Set `NEXT_PUBLIC_API_SAME_ORIGIN_PROXY=0` to point Axios at Laravel directly (`getPublicApiBaseUrl()`).
+ */
+export function useSameOriginApiProxy(): boolean {
+  const v = process.env.NEXT_PUBLIC_API_SAME_ORIGIN_PROXY?.trim().toLowerCase();
+  if (v === undefined || v === "") return true;
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
+/**
+ * Legacy name — same as {@link BILLING_BACKEND_PROXY_BASE}. Previously `/api/billing-api` when Laravel split `/api` vs `/api/backend`.
+ */
+export const BILLING_API_PROXY_BASE = BILLING_BACKEND_PROXY_BASE;
 
 /** Billing backend app origin (scheme + host + port), no `/api` path — used for Sanctum `/sanctum/csrf-cookie`. */
 export function getBillingBackendAppOrigin(): string {
@@ -64,13 +81,13 @@ export function getServerBillingBackendAppOrigin(): string {
   return getBillingBackendAppOrigin();
 }
 
-/** Sanctum + app routes: `/api/backend` on the billing backend host. */
+/** Laravel API base URL on the billing backend host (`…/api`). */
 export function getPublicApiBaseUrl(): string {
   const direct =
     process.env.NEXT_PUBLIC_BILLING_BACKEND_URL?.trim().replace(/\/$/, "") ||
     process.env.NEXT_PUBLIC_LARAVEL_API_URL?.trim().replace(/\/$/, "");
   if (direct) {
-    return `${direct}/api/backend`;
+    return `${direct}/api`;
   }
   const legacy = process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/$/, "");
   if (!legacy) {
@@ -78,14 +95,16 @@ export function getPublicApiBaseUrl(): string {
       "Set NEXT_PUBLIC_BILLING_BACKEND_URL (or NEXT_PUBLIC_LARAVEL_API_URL / NEXT_PUBLIC_API_BASE_URL)",
     );
   }
-  if (legacy.endsWith("/api/backend")) return legacy;
-  if (legacy.endsWith("/api")) return `${legacy}/backend`;
-  return `${legacy}/api/backend`;
+  if (legacy.endsWith("/api/backend")) {
+    return legacy.replace(/\/api\/backend$/, "/api");
+  }
+  if (legacy.endsWith("/api")) return legacy;
+  return `${legacy}/api`;
 }
 
 /**
  * This Next deployment’s origin, for server-side HTTP clients that call local Route Handlers
- * (loopback to `/api/billing-backend`, `/api/billing-api`, …). Not exposed to the browser.
+ * (loopback to `/api`, …). Not exposed to the browser.
  *
  * If `API_BASE_URL` / `NEXT_PUBLIC_API_BASE_URL` is `http://…` but `NEXT_PUBLIC_APP_URL` is `https://…`,
  * do **not** use the public URL for loopback — server-side Axios would call `https://` while you intended HTTP.
@@ -114,34 +133,35 @@ export function getInternalNextOrigin(): string {
   return `http://127.0.0.1:${port}`;
 }
 
-/** Billing backend `/api/backend` URL — for Route Handlers that proxy upstream (not for Axios baseURL on the server). */
+/** Laravel `/api` URL — for Route Handlers that proxy upstream and for direct server-side Axios when same-origin proxy is off. */
 export function getServerApiBaseUrl(): string {
   const server = process.env.API_BASE_URL?.trim().replace(/\/$/, "");
   if (server) {
-    if (server.endsWith("/api/backend")) return server;
-    if (server.endsWith("/api")) return `${server}/backend`;
-    return `${server}/api/backend`;
+    if (server.endsWith("/api/backend")) {
+      return server.replace(/\/api\/backend$/, "/api");
+    }
+    if (server.endsWith("/api")) return server;
+    return `${server}/api`;
+  }
+  const upstream = process.env.LARAVEL_UPSTREAM_ORIGIN?.trim().replace(/\/$/, "");
+  if (upstream) {
+    return `${upstream}/api`;
   }
   return getPublicApiBaseUrl();
 }
 
 /**
- * Base for legacy token routes (`/get-token`, `/refresh-token`, …) — usually `/api`, not `/api/backend`.
- * Override if your billing backend app moved these (e.g. same as `getServerApiBaseUrl()`).
+ * Base for token routes (`/get-token`, `/refresh-token`, …) on the Laravel host — usually same as `/api`.
+ * Override with `API_TOKEN_BOOTSTRAP_BASE_URL` if these live elsewhere.
  */
 export function getTokenBootstrapBaseUrl(): string {
   const explicit = process.env.API_TOKEN_BOOTSTRAP_BASE_URL?.trim().replace(/\/$/, "");
   if (explicit) return explicit;
-  const server = process.env.API_BASE_URL?.trim().replace(/\/$/, "");
-  if (server) {
-    if (server.endsWith("/api/backend")) return server.replace(/\/backend$/, "");
-    if (server.endsWith("/api")) return server;
-  }
-  return `${resolveBillingBackendOriginInner()}/api`;
+  return getServerApiBaseUrl();
 }
 
 /**
- * Public / payment / webhook routes are often registered under `/api/...` (not `/api/backend/...`).
+ * Public / payment / webhook routes under Laravel `/api/...`.
  * Prefer `NEXT_PUBLIC_BILLING_PUBLIC_API_BASE_URL`; legacy `NEXT_PUBLIC_LARAVEL_PUBLIC_BASE_URL` is still read.
  */
 export function getBillingBackendPublicApiBaseUrl(): string {
@@ -159,14 +179,7 @@ export function getBillingBackendPublicApiBaseUrl(): string {
  * `/api/...` on the billing backend host for server-side calls (matches `API_BASE_URL` when set).
  */
 export function getServerBillingBackendPublicApiBaseUrl(): string {
-  const server = process.env.API_BASE_URL?.trim().replace(/\/$/, "");
-  if (server) {
-    if (server.endsWith("/api/backend")) {
-      return server.replace(/\/api\/backend$/, "/api");
-    }
-    if (server.endsWith("/api")) return server;
-  }
-  return getBillingBackendPublicApiBaseUrl();
+  return getServerApiBaseUrl();
 }
 
 /**
@@ -180,28 +193,46 @@ export function getSanctumCsrfCookieUrl(): string {
 }
 
 /**
- * Axios `baseURL`: always the Next proxy (`BILLING_BACKEND_PROXY_BASE` in the browser, absolute URL on the server).
+ * Axios `baseURL`: same-origin `/api` on this Next app when {@link useSameOriginApiProxy} is true;
+ * otherwise the Laravel API base (`getPublicApiBaseUrl` / `getServerApiBaseUrl`).
  */
 export function getAxiosBaseUrl(): string {
+  if (!useSameOriginApiProxy()) {
+    if (typeof window === "undefined") {
+      return getServerApiBaseUrl();
+    }
+    return getPublicApiBaseUrl();
+  }
   if (typeof window === "undefined") {
     return `${getInternalNextOrigin()}${BILLING_BACKEND_PROXY_BASE}`;
   }
   return BILLING_BACKEND_PROXY_BASE;
 }
 
-/** `/api/...` paths outside `/api/backend` (get-token, public routes) — proxied via `BILLING_API_PROXY_BASE`. */
-export function resolveLegacyBillingApiUrl(path: string): string {
-  const p = path.startsWith("/") ? path : `/${path}`;
-  if (typeof window !== "undefined") {
-    return `${BILLING_API_PROXY_BASE}${p}`;
+/**
+ * Base for login/logout `fetch` / XHR (not Axios). Matches {@link getAxiosBaseUrl} semantics so manual requests
+ * stay on the Next `/api` proxy when same-origin is enabled.
+ */
+export function getAuthApiRequestBase(): string {
+  if (typeof window === "undefined") {
+    if (useSameOriginApiProxy()) {
+      return `${getInternalNextOrigin()}${BILLING_BACKEND_PROXY_BASE}`;
+    }
+    return getServerApiBaseUrl();
   }
-  return `${getInternalNextOrigin()}${BILLING_API_PROXY_BASE}${p}`;
+  if (useSameOriginApiProxy()) {
+    return BILLING_BACKEND_PROXY_BASE;
+  }
+  return getPublicApiBaseUrl();
 }
 
-export function resolvePublicBillingApiUrl(path: string): string {
+/** Path relative to Axios `baseURL` (`/api`) — same as prepending `/api` on the Next app. */
+export function resolveLegacyBillingApiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
-  if (typeof window !== "undefined") {
-    return `${BILLING_API_PROXY_BASE}${p}`;
-  }
-  return `${getInternalNextOrigin()}${BILLING_API_PROXY_BASE}${p}`;
+  return p;
+}
+
+/** @deprecated Use {@link resolveLegacyBillingApiUrl}; identical now that one proxy serves all `/api` routes. */
+export function resolvePublicBillingApiUrl(path: string): string {
+  return resolveLegacyBillingApiUrl(path);
 }

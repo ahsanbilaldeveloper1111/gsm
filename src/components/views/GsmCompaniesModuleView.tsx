@@ -127,7 +127,7 @@ export function GsmCompaniesModuleView() {
         ),
       },
     ],
-    [assignedPortsQuery, assignablePortsQuery, destroy],
+    [destroy],
   );
 
   const assignablePortsQuery = useMutation({

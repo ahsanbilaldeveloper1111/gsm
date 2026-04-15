@@ -7,7 +7,7 @@ This document explains the architecture of **billing_frontend**: a Next.js singl
 ## 1. What this app is
 
 - **Role:** Browser UI for billing operations (companies, customers, invoices, vendors, payments, ranks, audit logs, dashboard analytics, etc.).
-- **Backend:** A separate Laravel app exposes JSON under `/api` (this client uses the **`/api/backend/...`** stack with `Authorization: Bearer <token>` unless configured otherwise).
+- **Backend:** A separate Laravel app exposes JSON under **`/api/...`** (proxied same-origin at **`/api/...`** on this Next app).
 - **This repo:** Only the Next.js frontend — no Laravel code here.
 
 ---
@@ -28,13 +28,13 @@ This document explains the architecture of **billing_frontend**: a Next.js singl
 
 ```
 Browser UI (React)
-    ↓ Axios baseURL: /api/billing-backend
-Next.js Route Handler (src/app/api/billing-backend/[[...path]]/route.ts)
+    ↓ Axios baseURL: /api
+Next.js Route Handler (src/app/api/[[...path]]/route.ts)
     ↓ proxies to Laravel
-Laravel origin + /api/backend/...
+Laravel origin + /api/...
 ```
 
-1. The **browser never calls the Laravel origin directly** for normal API traffic. It calls paths on **this Next.js app** (e.g. `/api/billing-backend/...`).
+1. The **browser never calls the Laravel origin directly** for normal API traffic. It calls paths on **this Next.js app** (e.g. `/api/auth/login`).
 2. A **Route Handler** forwards the request to the real billing backend (see `src/lib/env.ts` for origin resolution and TLS options).
 3. **Sanctum CSRF** for cookie-based flows uses `/sanctum/csrf-cookie` (see `src/app/sanctum/csrf-cookie/route.ts` and `sanctum.service.ts`).
 
@@ -46,7 +46,7 @@ Server-side code (SSR, route handlers) may use an internal origin (`INTERNAL_NEX
 
 ### Login
 
-- **Endpoint (via proxy):** `POST .../api/backend/login` with `samaccountname`, `password`.
+- **Endpoint (via proxy):** `POST .../api/auth/login` with `samaccountname`, `password`.
 - **Response:** Envelope with `data.access_token` (and related fields). Login is implemented with careful handling of CSRF and body transport (`auth.service.ts`, `postJsonWithXhr.ts` where needed).
 - **Storage:** JWT is stored via `setStoredToken` in `src/lib/auth/tokenStore.ts`.
 - **`expires_in`:** The billing API sends **`expires_in` in minutes**. The client converts to **seconds** for an absolute expiry timestamp in storage (`loginExpiresInMinutesToStorageSeconds`). Do not treat the raw value as OAuth “seconds” unless you change the backend contract.
@@ -59,7 +59,7 @@ Server-side code (SSR, route handlers) may use an internal origin (`INTERNAL_NEX
 
 ### Logout
 
-- `POST .../api/backend/logout` (with CSRF where required), then **`clearStoredToken`**.
+- `POST .../api/logout` (with CSRF where required), then **`clearStoredToken`**.
 - The app navigates to **`/login`** after sign-out (`useAuthSessionMutations.ts`).
 
 ### Context
@@ -76,7 +76,7 @@ Server-side code (SSR, route handlers) may use an internal origin (`INTERNAL_NEX
 
 ### Path builders
 
-- **`src/lib/routes/apiRoutes.ts`** — central builders for backend paths **relative to** the Axios `baseURL` (which points at this app’s `/api/billing-backend` and therefore maps to Laravel `/api/backend/...`).
+- **`src/lib/routes/apiRoutes.ts`** — central builders for backend paths **relative to** the Axios `baseURL` (this app’s `/api`, which maps to Laravel `/api/...`).
 
 ### HTTP helpers
 
@@ -100,8 +100,7 @@ Server-side code (SSR, route handlers) may use an internal origin (`INTERNAL_NEX
 | `src/app/page.tsx` | Entry / landing |
 | `src/app/login/` | Login UI |
 | `src/app/(app)/` | Authenticated shell routes (dashboard, vendors, invoices, …) |
-| `src/app/api/billing-backend/[[...path]]/` | Proxy to Laravel `/api/backend/*` |
-| `src/app/api/billing-api/[[...path]]/` | Proxy for other `/api/*` backend routes |
+| `src/app/api/[[...path]]/` | Proxy to Laravel `/api/*` |
 | `src/app/sanctum/csrf-cookie/` | CSRF cookie for Sanctum |
 
 Layout: **`(app)/layout.tsx`** wraps pages in **`AppShell`** (sidebar, top bar, scroll area).

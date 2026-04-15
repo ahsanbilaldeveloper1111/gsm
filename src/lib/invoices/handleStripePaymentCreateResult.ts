@@ -14,7 +14,7 @@ function asRecord(v: unknown): Record<string, unknown> {
 }
 
 /**
- * Handles billing-backend payment create responses (saved card + Stripe PaymentIntent),
+ * Handles backend payment create responses (saved card + Stripe PaymentIntent),
  * including duplicate / already_completed and 3DS (`requires_action`).
  * Mirrors legacy `processCreatePaymentSuccess` + `confirmCardAndFinish`.
  */

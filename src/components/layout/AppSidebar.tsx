@@ -51,10 +51,10 @@ function NavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 ${
+      className={`group relative flex w-full min-w-0 items-center gap-3 rounded-lg border-l-[3px] py-2.5 pl-2.5 pr-3 text-sm font-medium transition-colors duration-200 ${
         active
-          ? "bg-gradient-to-r from-emerald-500/15 to-teal-500/10 text-emerald-900 shadow-sm ring-1 ring-emerald-500/20 dark:from-emerald-500/20 dark:to-teal-500/10 dark:text-emerald-50 dark:ring-emerald-500/25"
-          : "text-zinc-600 hover:bg-zinc-100/90 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-100"
+          ? "border-emerald-500 bg-emerald-50/90 text-emerald-950 dark:border-emerald-400 dark:bg-emerald-500/12 dark:text-emerald-50"
+          : "border-transparent text-zinc-600 hover:border-zinc-200 hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100"
       }`}
     >
       <NavIcon href={href} active={active} />
@@ -62,10 +62,10 @@ function NavLink({
         <span className="block truncate leading-snug">{label}</span>
         {description ? (
           <span
-            className={`mt-0.5 block truncate text-[10px] font-normal leading-tight ${
+            className={`mt-0.5 block truncate text-[11px] font-normal leading-tight ${
               active
-                ? "text-emerald-900/65 dark:text-emerald-100/65"
-                : "text-zinc-400 dark:text-zinc-500"
+                ? "text-emerald-800/80 dark:text-emerald-200/80"
+                : "text-zinc-500 dark:text-zinc-500"
             }`}
           >
             {description}
@@ -88,7 +88,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   return (
-    <aside className="flex h-full flex-col border-r border-zinc-200/50 bg-gradient-to-b from-white/95 via-zinc-50/40 to-white/90 shadow-[4px_0_32px_-12px_rgba(15,23,42,0.1)] backdrop-blur-2xl dark:border-zinc-800/70 dark:from-zinc-950 dark:via-zinc-950/95 dark:to-zinc-950/90 dark:shadow-[4px_0_40px_-8px_rgba(0,0,0,0.5)]">
+    <aside className="flex h-full min-h-0 flex-col border-r border-zinc-200/60 bg-white/90 shadow-[inset_-1px_0_0_0_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/95 dark:shadow-[inset_-1px_0_0_0_rgba(255,255,255,0.06)]">
       <div className="relative border-b border-zinc-200/50 px-4 py-6 dark:border-zinc-800/70">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
         <Link
@@ -104,16 +104,16 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
           </p>
         </Link>
       </div>
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4">
+      <nav className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden px-3 py-4">
         {navigationGroups.map((group) => {
           const visible = group.items.filter((item) => canSeeHref(item.href));
           if (visible.length === 0) return null;
           return (
             <div
               key={group.title}
-              className="mb-7 last:mb-0 rounded-2xl border border-zinc-200/40 bg-zinc-50/40 p-2 dark:border-zinc-800/50 dark:bg-zinc-900/35"
+              className="rounded-xl border border-zinc-200/50 bg-zinc-50/50 p-1.5 dark:border-zinc-800/60 dark:bg-zinc-900/40"
             >
-              <p className="mb-2 px-2.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+              <p className="mb-1.5 px-2.5 pt-1 text-[11px] font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
                 {group.title}
               </p>
               <ul className="space-y-0.5">

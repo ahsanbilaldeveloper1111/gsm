@@ -88,6 +88,27 @@ export type DisplayCurrencyContextValue = {
 const DisplayCurrencyContext =
   createContext<DisplayCurrencyContextValue | null>(null);
 
+const fallbackDisplayCurrencyContext: DisplayCurrencyContextValue = {
+  currencyCode: "",
+  displayTargetCode: "",
+  computedDefault: "USD",
+  isUserSelected: false,
+  setCurrencyCode: () => {},
+  setCurrencyCodeAuto: () => {},
+  resetToDefault: () => {},
+  options: [{ value: "", label: "Select Currency" }],
+  convertAmount: (amount) => parseAmount(amount),
+  formatInCurrency: (amount, fromCurrencyCode) =>
+    formatCurrency(parseAmount(amount), normalizeCode(fromCurrencyCode) || "USD"),
+  formatDisplay: (amount) => formatCurrency(parseAmount(amount), "USD"),
+  activeCurrencies: [],
+  baseCurrency: null,
+  currencyMap: new Map<string, Currency>(),
+  isLoadingActive: false,
+  isLoadingBase: false,
+  isCurrencyDataLoading: false,
+};
+
 export type DisplayCurrencyProviderProps = Readonly<{
   children: React.ReactNode;
   defaultCurrencyCode?: string | null;
@@ -290,12 +311,7 @@ export function DisplayCurrencyProvider({
 
 export function useDisplayCurrency(): DisplayCurrencyContextValue {
   const ctx = useContext(DisplayCurrencyContext);
-  if (!ctx) {
-    throw new Error(
-      "useDisplayCurrency must be used within a DisplayCurrencyProvider",
-    );
-  }
-  return ctx;
+  return ctx ?? fallbackDisplayCurrencyContext;
 }
 
 /** @deprecated Prefer `DisplayCurrencyProvider` + `useDisplayCurrency`. */

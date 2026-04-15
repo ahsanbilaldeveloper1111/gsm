@@ -1,4 +1,4 @@
-import { AxiosError } from "axios";
+import axios from "axios";
 
 type JsonObject = Record<string, unknown>;
 
@@ -121,7 +121,7 @@ export function normalizeTelecomDataResponse<T = unknown>(payload: unknown): T {
 export function toTelecomError(error: unknown): Error {
   if (error instanceof Error) return error;
   if (typeof error === "string") return new Error(error);
-  if (AxiosError.isAxiosError(error)) {
+  if (axios.isAxiosError(error)) {
     const message =
       typeof error.response?.data === "object" &&
       error.response?.data &&

@@ -112,7 +112,7 @@ export function logProxyUpstreamFailure(
 /** Route handler: API base URL / origin env not configured. */
 export function logBillingProxyEnvMissing(
   entry: Record<string, unknown> & {
-    route: "billing-backend" | "billing-api" | "sanctum-csrf";
+    route: "laravel-api" | "sanctum-csrf";
   },
 ): void {
   ensureLoggers();

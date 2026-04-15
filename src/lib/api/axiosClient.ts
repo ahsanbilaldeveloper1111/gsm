@@ -1,11 +1,11 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
 import { getBillingBackendHttpsAgent } from "@/lib/api/nodeTlsAgent";
 import {
-  BILLING_API_PROXY_BASE,
   BILLING_BACKEND_PROXY_BASE,
   getAxiosBaseUrl,
+  useSameOriginApiProxy,
 } from "@/lib/env";
-import { appPaths } from "@/lib/navigation/appPaths";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 
 const SUPER_Q = "is_super_user";
 const SUPER_V = "1";
@@ -93,32 +93,40 @@ function mergeJsonBody(config: InternalAxiosRequestConfig): void {
 function applyRequestInterceptors(client: AxiosInstance): void {
   client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     if (typeof window !== "undefined") {
-      // Same-origin proxies: `BILLING_BACKEND_PROXY_BASE` vs `BILLING_API_PROXY_BASE` (legacy `/api/*`).
-      // Axios merges baseURL + url — a path under `BILLING_API_PROXY_BASE` must NOT use `BILLING_BACKEND_PROXY_BASE`
-      // or the request merges incorrectly (401 / wrong route).
-      const raw = config.url;
-      if (typeof raw === "string" && raw.startsWith(BILLING_API_PROXY_BASE)) {
-        config.baseURL = BILLING_API_PROXY_BASE;
-        config.url = raw.slice(BILLING_API_PROXY_BASE.length) || "/";
-      } else {
-        config.baseURL = BILLING_BACKEND_PROXY_BASE;
-        if (raw && /^https?:\/\//i.test(raw)) {
-          try {
-            const u = new URL(raw);
-            const pathWithQuery = u.pathname + u.search;
-            if (pathWithQuery.startsWith("/api/backend")) {
-              config.url =
-                pathWithQuery.slice("/api/backend".length) || "/";
-            } else if (
-              u.pathname.startsWith("/api/") &&
-              !u.pathname.startsWith("/api/billing-")
-            ) {
-              config.baseURL = BILLING_API_PROXY_BASE;
-              config.url = u.pathname.slice("/api".length) + u.search || "/";
+      if (useSameOriginApiProxy()) {
+        const proxyBase = BILLING_BACKEND_PROXY_BASE;
+        const raw = config.url;
+        if (typeof raw === "string" && raw) {
+          if (/^https?:\/\//i.test(raw)) {
+            try {
+              const loc = new URL(raw);
+              const pathWithQuery = loc.pathname + loc.search;
+              let relative: string | null = null;
+              if (pathWithQuery.startsWith("/api/backend")) {
+                relative = pathWithQuery.slice("/api/backend".length) || "/";
+              } else if (pathWithQuery.startsWith("/api/billing-api")) {
+                relative = pathWithQuery.slice("/api/billing-api".length) || "/";
+              } else if (
+                pathWithQuery === "/api" ||
+                pathWithQuery.startsWith("/api/")
+              ) {
+                relative = pathWithQuery.slice("/api".length) || "/";
+              }
+              if (relative !== null) {
+                config.baseURL = proxyBase;
+                config.url = relative;
+              }
+            } catch {
+              /* leave url/base */
             }
-          } catch {
-            /* leave url */
+          } else if (raw === "/api" || raw.startsWith("/api/")) {
+            config.baseURL = proxyBase;
+            config.url = raw.slice("/api".length) || "/";
+          } else {
+            config.baseURL = proxyBase;
           }
+        } else {
+          config.baseURL = proxyBase;
         }
       }
     } else {
@@ -200,7 +208,7 @@ function shouldSkipAuthRedirectToLogin(
   if (!config?.url) return false;
   const path = config.url.split("?")[0];
   if (path === "/login" || path.endsWith("/login")) return true;
-  if (typeof window !== "undefined" && window.location.pathname === appPaths.login) {
+  if (typeof window !== "undefined" && window.location.pathname === "/login") {
     return true;
   }
   return false;
@@ -210,7 +218,46 @@ function isUnauthorizedOrForbidden(status: number | undefined): boolean {
   return status === 401 || status === 403;
 }
 
-let redirectingToLogin = false;
+type RetryableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+  _skipTokenRefresh?: boolean;
+};
+
+let refreshTokenPromise: Promise<boolean> | null = null;
+
+async function fetchTokenSilently(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  const baseURL = getAxiosBaseUrl();
+  const agent = getBillingBackendHttpsAgent();
+  const headers: Record<string, string> = { Accept: "application/json" };
+  const fakeConfig = {
+    headers: new axios.AxiosHeaders(),
+  } as InternalAxiosRequestConfig;
+  applyXsrfHeaderFromCookie(fakeConfig);
+  const xsrfHeader = fakeConfig.headers.get(XSRF_HEADER);
+  if (typeof xsrfHeader === "string" && xsrfHeader.trim()) {
+    headers[XSRF_HEADER] = xsrfHeader;
+  }
+  const path = `${apiRoutes.token.getTokenPost()}?${SUPER_Q}=${SUPER_V}`;
+  const res = await axios.post(path, {}, {
+    baseURL,
+    withCredentials: true,
+    headers,
+    httpsAgent: agent,
+    validateStatus: (status) => status >= 200 && status < 300,
+  });
+  return res.status >= 200 && res.status < 300;
+}
+
+async function refreshTokenWithLock(): Promise<boolean> {
+  if (refreshTokenPromise) return refreshTokenPromise;
+  refreshTokenPromise = fetchTokenSilently()
+    .catch(() => false)
+    .finally(() => {
+      refreshTokenPromise = null;
+    });
+  return refreshTokenPromise;
+}
 
 function applyResponseInterceptor(client: AxiosInstance): void {
   client.interceptors.response.use(
@@ -220,11 +267,16 @@ function applyResponseInterceptor(client: AxiosInstance): void {
         return Promise.reject(error);
       }
       if (typeof window === "undefined") return Promise.reject(error);
-      if (shouldSkipAuthRedirectToLogin(error.config)) return Promise.reject(error);
-      if (redirectingToLogin) return Promise.reject(error);
-      redirectingToLogin = true;
-      window.location.replace(appPaths.login);
-      return Promise.reject(error);
+      const originalConfig = error.config as RetryableRequestConfig | undefined;
+      if (!originalConfig) return Promise.reject(error);
+      if (originalConfig._skipTokenRefresh) return Promise.reject(error);
+      if (shouldSkipAuthRedirectToLogin(originalConfig)) return Promise.reject(error);
+      if (originalConfig._retry) return Promise.reject(error);
+      originalConfig._retry = true;
+      return refreshTokenWithLock().then((ok) => {
+        if (!ok) return Promise.reject(error);
+        return client.request(originalConfig);
+      });
     },
   );
 }
@@ -237,7 +289,8 @@ let _client: AxiosInstance | null = null;
  * - JWT is sent by proxy using HTTP-only cookie, not localStorage token headers
  * - `withCredentials: true`, `withXSRFToken: true`, cookie/header names — Sanctum CSRF (see `applyXsrfHeaderFromCookie`; call `fetchSanctumCsrfCookie` before login/logout)
  * - Server-side only: `API_TLS_INSECURE=1` uses `getBillingBackendHttpsAgent()` (same as proxy route handlers)
- * - Browser: **401** or **403** → `location.replace('/login')`, except failed **login** POST (`/login`).
+ * - Browser: on 401 or 403, call `POST /get-token` and retry once (no forced redirect).
+ * - When `NEXT_PUBLIC_API_SAME_ORIGIN_PROXY` is off, `baseURL` is Laravel (`getPublicApiBaseUrl`); CORS must allow this origin.
  */
 export function getApiClient(): AxiosInstance {
   if (!_client) {

@@ -1,28 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f7f5;
+  --background: #f8fafc;
   --foreground: #0f172a;
   --muted: #64748b;
   --surface: #ffffff;
-  --surface-elevated: rgba(255, 255, 255, 0.78);
+  --surface-elevated: rgba(255, 255, 255, 0.82);
+  --border: rgba(15, 23, 42, 0.08);
   --accent: #059669;
-  --accent-muted: rgba(5, 150, 105, 0.14);
+  --accent-hover: #047857;
+  --accent-muted: rgba(5, 150, 105, 0.12);
+  --accent-fg: #ffffff;
   --ring-subtle: rgba(15, 23, 42, 0.06);
-  --glow-accent: rgba(16, 185, 129, 0.15);
+  --glow-accent: rgba(16, 185, 129, 0.12);
+  --radius-card: 1rem;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md:
+    0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg:
+    0 12px 40px -12px rgba(15, 23, 42, 0.12), 0 4px 16px -4px rgba(15, 23, 42, 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #090c0b;
+    --background: #030712;
     --foreground: #f1f5f9;
     --muted: #94a3b8;
-    --surface: #0f1412;
-    --surface-elevated: rgba(15, 20, 18, 0.88);
+    --surface: #0c1222;
+    --surface-elevated: rgba(12, 18, 34, 0.92);
+    --border: rgba(248, 250, 252, 0.08);
     --accent: #34d399;
-    --accent-muted: rgba(52, 211, 153, 0.14);
+    --accent-hover: #6ee7b7;
+    --accent-muted: rgba(52, 211, 153, 0.15);
+    --accent-fg: #022c22;
     --ring-subtle: rgba(241, 245, 249, 0.06);
-    --glow-accent: rgba(52, 211, 153, 0.12);
+    --glow-accent: rgba(52, 211, 153, 0.1);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 20px 50px -12px rgba(0, 0, 0, 0.55);
   }
 }
 
@@ -35,39 +50,30 @@
 
 html {
   scroll-behavior: smooth;
+  color-scheme: light dark;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--accent) 35%, transparent);
+  background: color-mix(in oklab, var(--accent) 32%, transparent);
   color: var(--foreground);
 }
 
-/* Subtle page texture (light mode) */
+/* App canvas — soft mesh (light) */
 @media (prefers-color-scheme: light) {
   body {
     background-image:
-      radial-gradient(
-        ellipse 140% 90% at 50% -25%,
-        rgba(5, 150, 105, 0.09),
-        transparent 52%
-      ),
-      radial-gradient(
-        ellipse 70% 50% at 100% 5%,
-        rgba(59, 130, 246, 0.055),
-        transparent 42%
-      ),
-      radial-gradient(
-        ellipse 50% 35% at 0% 80%,
-        rgba(20, 184, 166, 0.04),
-        transparent 45%
-      );
+      radial-gradient(1200px 600px at 50% -20%, rgba(5, 150, 105, 0.07), transparent 55%),
+      radial-gradient(800px 400px at 100% 0%, rgba(59, 130, 246, 0.045), transparent 50%),
+      radial-gradient(600px 400px at 0% 100%, rgba(20, 184, 166, 0.035), transparent 50%);
     background-attachment: fixed;
   }
 }
@@ -75,21 +81,9 @@ body {
 @media (prefers-color-scheme: dark) {
   body {
     background-image:
-      radial-gradient(
-        ellipse 110% 65% at 50% -15%,
-        rgba(52, 211, 153, 0.1),
-        transparent 48%
-      ),
-      radial-gradient(
-        ellipse 55% 35% at 100% 0%,
-        rgba(56, 189, 248, 0.06),
-        transparent 42%
-      ),
-      radial-gradient(
-        ellipse 45% 40% at 0% 90%,
-        rgba(45, 212, 191, 0.04),
-        transparent 50%
-      );
+      radial-gradient(1000px 500px at 50% -15%, rgba(52, 211, 153, 0.09), transparent 52%),
+      radial-gradient(700px 380px at 100% 0%, rgba(56, 189, 248, 0.05), transparent 48%),
+      radial-gradient(500px 360px at 0% 100%, rgba(45, 212, 191, 0.04), transparent 50%);
     background-attachment: fixed;
   }
 }

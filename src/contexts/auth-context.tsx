@@ -7,35 +7,28 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useSyncExternalStore,
 } from "react";
 import { useAuthSessionMutations } from "@/hooks/auth/useAuthSessionMutations";
-import {
-  clearSessionIfExpired,
-  getStoredTokenSnapshot,
-  subscribeStoredToken,
-} from "@/lib/auth/tokenStore";
+import { apiPost } from "@/lib/api/http";
+import { apiRoutes } from "@/lib/routes/apiRoutes";
 import type { LoginPayload, LoginResult } from "@/services/auth.service";
 
 type AuthContextValue = {
-  token: string | null;
   login: (payload: LoginPayload) => Promise<LoginResult>;
   logout: () => Promise<void>;
   /** Same credentials flow as `login()`; exposes React Query mutation state. */
   loginMutation: UseMutationResult<LoginResult, Error, LoginPayload>;
+  /**
+   * `POST /get-token` — refreshes the HTTP-only JWT via the Next proxy when the backend allows it.
+   * Safe to call on load; failures are ignored (session is enforced by `/user` in guarded layouts).
+   */
+  refreshSession: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const token = useSyncExternalStore(
-    subscribeStoredToken,
-    getStoredTokenSnapshot,
-    () => null,
-  );
-
-  const { loginMutation, login: loginInner, logout } =
-    useAuthSessionMutations();
+  const { loginMutation, login: loginInner, logout } = useAuthSessionMutations();
 
   const login = useCallback(
     async (payload: LoginPayload) => {
@@ -44,19 +37,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [loginInner],
   );
 
-  /** Clear expired JWT from storage on load so snapshot and axios agree. */
-  useEffect(() => {
-    clearSessionIfExpired();
+  const refreshSession = useCallback(async () => {
+    if (typeof window !== "undefined" && window.location.pathname === "/login") {
+      return;
+    }
+    try {
+      await apiPost<unknown>(apiRoutes.token.getTokenPost(), {});
+    } catch {
+      /* not authenticated or backend declined — guarded routes use `/user` */
+    }
   }, []);
+
+  useEffect(() => {
+    void refreshSession();
+  }, [refreshSession]);
 
   const value = useMemo(
     () => ({
-      token,
       login,
       logout,
       loginMutation,
+      refreshSession,
     }),
-    [token, login, logout, loginMutation],
+    [login, logout, loginMutation, refreshSession],
   );
 
   return (
@@ -70,9 +73,4 @@ export function useAuth(): AuthContextValue {
     throw new Error("useAuth must be used within AuthProvider");
   }
   return ctx;
-}
-
-export function useOptionalToken(): string | null {
-  const ctx = useContext(AuthContext);
-  return ctx?.token ?? null;
 }

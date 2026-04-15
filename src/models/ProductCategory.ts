@@ -1,5 +1,5 @@
 /**
- * `GET/POST /api/backend/product-categories` — list rows and form payloads.
+ * `GET/POST /api/product-categories` — list rows and form payloads.
  */
 export interface ProductCategory {
   id: number;
@@ -13,7 +13,7 @@ export interface ProductCategory {
   updated_at?: string;
 }
 
-/** `GET /api/backend/product-categories` — filters + `order[column]` / `order[dir]`. */
+/** `GET /api/product-categories` — filters + `order[column]` / `order[dir]`. */
 export interface IndexProductCategoryParams {
   tenant_id?: string | null;
   page?: number;

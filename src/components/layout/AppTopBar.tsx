@@ -1,6 +1,5 @@
 "use client";
 
-import { HeaderCurrencySelect } from "@/components/layout/HeaderCurrencySelect";
 import { useAuth } from "@/contexts/auth-context";
 import { useCurrentUser } from "@/hooks/auth/useCurrentUser";
 
@@ -16,7 +15,7 @@ function initials(name: string | null | undefined): string {
 }
 
 export function AppTopBar({ onMenuClick }: { onMenuClick: () => void }) {
-  const { token, logout } = useAuth();
+  const { logout } = useAuth();
   const userQuery = useCurrentUser();
 
   const userRecord =
@@ -31,7 +30,7 @@ export function AppTopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const sub = userQuery.isFetching ? "Syncing profile…" : " ";
 
   return (
-    <header className="sticky top-0 z-30 flex h-[3.25rem] shrink-0 items-center justify-between gap-3 border-b border-zinc-200/40 bg-white/70 px-3 shadow-[0_1px_0_rgba(255,255,255,0.65)_inset] backdrop-blur-xl dark:border-zinc-800/40 dark:bg-zinc-950/70 dark:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] sm:h-14 sm:px-5">
+    <header className="sticky top-0 z-30 flex h-[3.25rem] shrink-0 items-center justify-between gap-3 border-b border-zinc-200/50 bg-white/80 px-3 backdrop-blur-xl backdrop-saturate-150 dark:border-zinc-800/60 dark:bg-zinc-950/75 sm:h-14 sm:px-5">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button
           type="button"
@@ -56,7 +55,7 @@ export function AppTopBar({ onMenuClick }: { onMenuClick: () => void }) {
         </button>
         <div className="flex min-w-0 items-center gap-3">
           <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-semibold text-white shadow-md shadow-emerald-500/20"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-xs font-semibold text-white shadow-sm ring-1 ring-white/20 dark:from-emerald-500 dark:to-emerald-800 dark:ring-emerald-400/20"
             aria-hidden
           >
             {initials(displayName)}
@@ -72,16 +71,10 @@ export function AppTopBar({ onMenuClick }: { onMenuClick: () => void }) {
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-        {token ? <HeaderCurrencySelect /> : null}
-        {token ? (
-          <span className="hidden rounded-full bg-emerald-500/12 px-2.5 py-1 text-[11px] font-medium text-emerald-800 ring-1 ring-emerald-500/20 dark:text-emerald-200 dark:ring-emerald-500/25 sm:inline">
-            Session
-          </span>
-        ) : null}
         <button
           type="button"
           onClick={() => logout()}
-          className="rounded-xl bg-zinc-900 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+          className="rounded-xl border border-zinc-200/80 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
         >
           Sign out
         </button>

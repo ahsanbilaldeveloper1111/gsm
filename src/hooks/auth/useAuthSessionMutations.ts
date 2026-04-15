@@ -10,7 +10,7 @@ import { loginRequest, logoutRequest } from "@/services/auth.service";
 
 /**
  * Login and logout via React Query mutations (services stay here, not in context).
- * JWT persistence + `useSyncExternalStore` live in {@link tokenStore} / `AuthProvider`.
+ * JWT is stored in an HTTP-only cookie by the Next proxy; session shape comes from `/user` (see `useCurrentUser`).
  */
 export function useAuthSessionMutations() {
   const queryClient = useQueryClient();
@@ -39,7 +39,7 @@ export function useAuthSessionMutations() {
     try {
       await logoutMutation.mutateAsync();
     } catch {
-      /* `logoutRequest` clears the token in `finally` even when the API fails */
+      /* Proxy clears the http-only JWT cookie when logout succeeds. */
     } finally {
       router.replace(appPaths.login);
     }

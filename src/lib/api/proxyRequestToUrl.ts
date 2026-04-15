@@ -15,7 +15,7 @@ const JWT_COOKIE_TTL_SECONDS = 60 * 60 * 24;
 /**
  * When the billing backend returns 30x with `Location: https://upstream-host/api/...`, the browser would follow
  * that URL and leave the Next proxy — TLS is then enforced in the browser (`ERR_CERT_*`), and Node’s
- * `https.Agent` does not apply. Rewrite `Location` to stay under `/api/billing-backend` or `/api/billing-api`.
+ * `https.Agent` does not apply. Rewrite `Location` to stay under this app’s `/api` proxy.
  */
 export type BillingBackendProxyRewrite = {
   upstreamBaseUrl: string;

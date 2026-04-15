@@ -63,7 +63,7 @@ export interface VendorBankAccount {
   updated_at?: string;
 }
 
-/** `GET /api/backend/vendors` — query keys match Laravel `VendorController`/FormRequest. */
+/** `GET /api/vendors` — query keys match Laravel `VendorController`/FormRequest. */
 export interface IndexVendorParams extends PaginationParams {
   search?: string;
   email?: string;

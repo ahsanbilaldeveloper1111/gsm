@@ -2,6 +2,40 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
+/** Page numbers with ellipsis gaps for long ranges (e.g. `1 … 4 5 6 … 20`). */
+function getPaginationItems(
+  currentPage: number,
+  totalPages: number,
+): Array<number | "ellipsis"> {
+  if (totalPages <= 1) return [1];
+  if (totalPages <= 9) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+  if (currentPage <= 4) {
+    return [1, 2, 3, 4, 5, "ellipsis", totalPages];
+  }
+  if (currentPage >= totalPages - 3) {
+    return [
+      1,
+      "ellipsis",
+      totalPages - 4,
+      totalPages - 3,
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    ];
+  }
+  return [
+    1,
+    "ellipsis",
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    "ellipsis",
+    totalPages,
+  ];
+}
+
 type ColumnDef<T> = {
   key: string;
   header: ReactNode;
@@ -105,30 +139,47 @@ export function PaginatedDataTable<T>({
     setClientPage(next);
   }
 
+  function goToPage(next: number) {
+    const p = Math.max(1, Math.min(calculatedTotalPages, next));
+    if (isServerMode) {
+      onPageChange?.(p);
+      return;
+    }
+    setClientPage(p);
+  }
+
+  const pageItems = useMemo(
+    () => getPaginationItems(safePage, calculatedTotalPages),
+    [safePage, calculatedTotalPages],
+  );
+
   return (
     <div className="space-y-3">
       {toolbar ? <div>{toolbar}</div> : null}
-      <div className="overflow-x-auto">
-        <table className={`w-full text-left text-sm ${minWidthClassName}`}>
-          <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-900/60 dark:text-zinc-300">
+      <div className="overflow-x-auto rounded-b-xl">
+        <table className={`w-full border-collapse text-left text-sm ${minWidthClassName}`}>
+          <thead className="border-b border-zinc-200/90 bg-zinc-50/95 text-[11px] font-semibold tracking-wide text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-300">
             <tr>
               {columns.map((column) => (
-                <th key={column.key} className={`px-3 py-2 ${column.className ?? ""}`}>
+                <th
+                  key={column.key}
+                  className={`whitespace-nowrap px-4 py-3.5 first:pl-5 last:pr-5 ${column.className ?? ""}`}
+                >
                   {column.header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
             {isLoading ? (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-6 text-center text-zinc-500">
+                <td colSpan={columns.length} className="px-5 py-12 text-center text-sm text-zinc-500">
                   {loadingMessage}
                 </td>
               </tr>
             ) : pagedRows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-6 text-center text-zinc-500">
+                <td colSpan={columns.length} className="px-5 py-12 text-center text-sm text-zinc-500">
                   {emptyMessage}
                 </td>
               </tr>
@@ -136,10 +187,13 @@ export function PaginatedDataTable<T>({
               pagedRows.map((row, index) => (
                 <tr
                   key={getRowKey?.(row, index) ?? String(index)}
-                  className="border-t border-zinc-200 dark:border-zinc-800"
+                  className="transition-colors hover:bg-zinc-50/90 dark:hover:bg-zinc-900/50"
                 >
                   {columns.map((column) => (
-                    <td key={column.key} className={`px-3 py-2 ${column.className ?? ""}`}>
+                    <td
+                      key={column.key}
+                      className={`align-middle px-4 py-3.5 text-zinc-800 first:pl-5 last:pr-5 dark:text-zinc-200 ${column.className ?? ""}`}
+                    >
                       {column.render(row, index)}
                     </td>
                   ))}
@@ -150,19 +204,21 @@ export function PaginatedDataTable<T>({
         </table>
       </div>
 
-      <div className="flex flex-col gap-2 px-3 pb-3 pt-1 text-sm text-zinc-600 md:flex-row md:items-center md:justify-between dark:text-zinc-300">
-        <div>
-          Showing {startRow}-{endRow} of {calculatedTotalRows}
+      <div className="flex flex-col gap-3 border-t border-zinc-100 px-4 py-3.5 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:text-zinc-300">
+        <div className="text-[13px] tabular-nums text-zinc-500 dark:text-zinc-400">
+          Showing <span className="font-medium text-zinc-700 dark:text-zinc-200">{startRow}</span>–
+          <span className="font-medium text-zinc-700 dark:text-zinc-200">{endRow}</span> of{" "}
+          <span className="font-medium text-zinc-700 dark:text-zinc-200">{calculatedTotalRows}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="per-page" className="text-xs uppercase tracking-wide">
-            Per page
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="per-page" className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Rows per page
           </label>
           <select
             id="per-page"
             value={String(resolvedPerPage)}
             onChange={(e) => handlePerPageChange(Number(e.target.value))}
-            className="rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
           >
             {perPageOptions.map((option) => (
               <option key={option} value={option}>
@@ -170,25 +226,75 @@ export function PaginatedDataTable<T>({
               </option>
             ))}
           </select>
-          <button
-            type="button"
-            onClick={handlePrevPage}
-            disabled={safePage <= 1}
-            className="rounded border border-zinc-300 px-2 py-1 disabled:opacity-50 dark:border-zinc-700"
+          <div
+            className="ml-1 flex flex-wrap items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50/80 p-1 dark:border-zinc-700 dark:bg-zinc-900/50"
+            role="navigation"
+            aria-label="Table pagination"
           >
-            Prev
-          </button>
-          <span className="min-w-16 text-center text-xs uppercase tracking-wide">
-            Page {safePage}/{calculatedTotalPages}
-          </span>
-          <button
-            type="button"
-            onClick={handleNextPage}
-            disabled={safePage >= calculatedTotalPages}
-            className="rounded border border-zinc-300 px-2 py-1 disabled:opacity-50 dark:border-zinc-700"
-          >
-            Next
-          </button>
+            <button
+              type="button"
+              onClick={() => goToPage(1)}
+              disabled={safePage <= 1}
+              className="rounded-md px-2 py-1.5 text-xs font-medium text-zinc-700 transition enabled:hover:bg-white enabled:hover:shadow-sm disabled:opacity-40 dark:text-zinc-200 enabled:dark:hover:bg-zinc-800"
+              title="First page"
+            >
+              First
+            </button>
+            <button
+              type="button"
+              onClick={handlePrevPage}
+              disabled={safePage <= 1}
+              className="rounded-md px-2 py-1.5 text-xs font-medium text-zinc-700 transition enabled:hover:bg-white enabled:hover:shadow-sm disabled:opacity-40 dark:text-zinc-200 enabled:dark:hover:bg-zinc-800"
+              title="Previous page"
+            >
+              Prev
+            </button>
+            <div className="flex items-center gap-0.5 px-0.5">
+              {pageItems.map((item, idx) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`e-${idx}`}
+                    className="flex min-w-[1.75rem] items-center justify-center px-1 text-xs font-medium text-zinc-400 select-none dark:text-zinc-500"
+                    aria-hidden
+                  >
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => goToPage(item)}
+                    title={`Page ${item}`}
+                    className={`min-w-[2rem] rounded-md px-2 py-1.5 text-xs font-medium tabular-nums transition ${
+                      item === safePage
+                        ? "bg-emerald-600 text-white shadow-sm dark:bg-emerald-600"
+                        : "text-zinc-700 hover:bg-white hover:shadow-sm dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleNextPage}
+              disabled={safePage >= calculatedTotalPages}
+              className="rounded-md px-2 py-1.5 text-xs font-medium text-zinc-700 transition enabled:hover:bg-white enabled:hover:shadow-sm disabled:opacity-40 dark:text-zinc-200 enabled:dark:hover:bg-zinc-800"
+              title="Next page"
+            >
+              Next
+            </button>
+            <button
+              type="button"
+              onClick={() => goToPage(calculatedTotalPages)}
+              disabled={safePage >= calculatedTotalPages}
+              className="rounded-md px-2 py-1.5 text-xs font-medium text-zinc-700 transition enabled:hover:bg-white enabled:hover:shadow-sm disabled:opacity-40 dark:text-zinc-200 enabled:dark:hover:bg-zinc-800"
+              title="Last page"
+            >
+              Last
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -184,21 +184,22 @@ export function GsmModuleView() {
       {
         key: "actions",
         header: "Actions",
+        className: "w-[1%] whitespace-nowrap text-right",
         render: (row: GsmDevice) => (
-          <div className="flex flex-wrap gap-2">
+          <div className="inline-flex flex-nowrap items-center justify-end gap-1.5">
             <button
               type="button"
               onClick={() => openEdit(row)}
-              className="rounded-lg bg-zinc-900 px-2 py-1 text-xs font-medium text-white dark:bg-emerald-600"
+              className="rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-800 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-emerald-500/50 dark:hover:bg-emerald-950/40"
             >
               Edit
             </button>
             <button
               type="button"
               onClick={() => row.id != null && openAssign(row.id)}
-              className="rounded-lg bg-sky-600 px-2 py-1 text-xs font-medium text-white"
+              className="rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-medium text-sky-800 transition hover:bg-sky-100 dark:border-sky-500/40 dark:bg-sky-950/50 dark:text-sky-100 dark:hover:bg-sky-900/60"
             >
-              Assign Company
+              Assign
             </button>
             <button
               type="button"
@@ -207,7 +208,7 @@ export function GsmModuleView() {
                 if (!window.confirm("Delete this GSM?")) return;
                 deleteMutation.mutate(row.id);
               }}
-              className="rounded-lg bg-rose-600 px-2 py-1 text-xs font-medium text-white"
+              className="rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-800 transition hover:bg-rose-100 dark:border-rose-500/40 dark:bg-rose-950/40 dark:text-rose-100 dark:hover:bg-rose-900/50"
             >
               Delete
             </button>
@@ -219,62 +220,68 @@ export function GsmModuleView() {
   );
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-        <InputField
-          label="Ip Address"
-          value={draft.ip_address}
-          onChange={(v) => setDraft((s) => ({ ...s, ip_address: v }))}
-          placeholder="IP Address"
-        />
-        <InputField
-          label="GSM Name"
-          value={draft.name}
-          onChange={(v) => setDraft((s) => ({ ...s, name: v }))}
-          placeholder="GSM Name"
-        />
-        <SelectField
-          label="GSM Status"
-          value={draft.status}
-          onChange={(v) => setDraft((s) => ({ ...s, status: v }))}
-          options={[
-            { value: "", label: "All" },
-            { value: "active", label: "Active" },
-            { value: "inactive", label: "Inactive" },
-          ]}
-        />
-        <SelectField
-          label="Device Status"
-          value={draft.device_status}
-          onChange={(v) => setDraft((s) => ({ ...s, device_status: v }))}
-          options={[
-            { value: "", label: "All" },
-            { value: "power_on", label: "Power On" },
-            { value: "power_off", label: "Power Off" },
-          ]}
-        />
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={() => setFilters({ ...draft })}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
-          >
-            Submit
-          </button>
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-zinc-200/90 bg-white/90 p-4 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-950/40 dark:ring-white/5 sm:p-5">
+        <p className="mb-3 text-xs font-medium text-zinc-500 dark:text-zinc-400">Filters</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
+          <InputField
+            label="IP address"
+            value={draft.ip_address}
+            onChange={(v) => setDraft((s) => ({ ...s, ip_address: v }))}
+            placeholder="e.g. 192.168.1.1"
+          />
+          <InputField
+            label="GSM name"
+            value={draft.name}
+            onChange={(v) => setDraft((s) => ({ ...s, name: v }))}
+            placeholder="Search by name"
+          />
+          <SelectField
+            label="GSM status"
+            value={draft.status}
+            onChange={(v) => setDraft((s) => ({ ...s, status: v }))}
+            options={[
+              { value: "", label: "All" },
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+            ]}
+          />
+          <SelectField
+            label="Device status"
+            value={draft.device_status}
+            onChange={(v) => setDraft((s) => ({ ...s, device_status: v }))}
+            options={[
+              { value: "", label: "All" },
+              { value: "power_on", label: "Power on" },
+              { value: "power_off", label: "Power off" },
+            ]}
+          />
+          <div className="flex items-end lg:col-span-2">
+            <button
+              type="button"
+              onClick={() => setFilters({ ...draft })}
+              className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto dark:bg-emerald-600 dark:hover:bg-emerald-500"
+            >
+              Apply filters
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/50">
-        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-200">
-            Details
-          </h4>
+      <div className="overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-950/50 dark:ring-white/5">
+        <div className="flex flex-col gap-3 border-b border-zinc-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 dark:border-zinc-800/80">
+          <div>
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Devices</h2>
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+              Manage GSM endpoints and company assignments
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => setShowAdd(true)}
-            className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
+            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
           >
-            + Add GSM
+            Add GSM
           </button>
         </div>
         <PaginatedDataTable
@@ -433,7 +440,7 @@ function GsmFormModal({
               value={form.password}
               onChange={(e) => onChange({ ...form, password: e.target.value })}
               placeholder="Password"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3 py-2.5 text-sm shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-900/50 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
             />
           </div>
           {includeStatus ? (
@@ -492,7 +499,7 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3 py-2.5 text-sm shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-900/50 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
       >
         {options.map((o) => (
           <option key={`${o.value}-${o.label}`} value={o.value}>
@@ -524,7 +531,7 @@ function InputField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3 py-2.5 text-sm shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-900/50 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
       />
     </div>
   );

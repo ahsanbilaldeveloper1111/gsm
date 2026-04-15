@@ -279,7 +279,7 @@ export enum FacInfoCallingAccess {
   DISALLOW_FAC_INFO = 0,
 }
 
-/** `GET /api/backend/company` — filters + `order[column]` / `order[dir]`. */
+/** `GET /api/company` — filters + `order[column]` / `order[dir]`. */
 export interface IndexCompanyParams extends PaginationParams {
   search?: string;
   email?: string;

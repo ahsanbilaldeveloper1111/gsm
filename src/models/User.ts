@@ -1,7 +1,7 @@
 import type { UserPermission } from "@/models/Permission";
 import type { Rank } from "@/models/Rank";
 
-/** `GET /api/backend/users` — see backend `User\IndexRequest`. */
+/** `GET /api/users` — see backend `User\IndexRequest`. */
 export interface IndexUserParams {
   search?: string;
   company_id?: number;

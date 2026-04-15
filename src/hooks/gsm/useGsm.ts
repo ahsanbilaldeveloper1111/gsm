@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuthQueryEnabled } from "@/hooks/useAuthQueryEnabled";
+import type { QueryParams } from "@/lib/api/http";
 import { queryKeys } from "@/lib/queryKeys";
 import type { IndexGsmParams } from "@/models/Gsm";
 import { gsmService } from "@/services/gsm.service";
@@ -19,10 +20,10 @@ export function useGsm(params?: IndexGsmParams) {
   });
 }
 
-export function useGsmClientProfile(params?: Record<string, unknown>) {
+export function useGsmClientProfile(params?: QueryParams) {
   const enabled = useAuthQueryEnabled();
   return useQuery({
-    queryKey: queryKeys.gsm.clientProfile(record(params)),
+    queryKey: queryKeys.gsm.clientProfile(record(params as Record<string, unknown> | undefined)),
     queryFn: () => gsmService.clientProfile(params),
     enabled,
   });

@@ -67,7 +67,7 @@ export interface ProductShowDiscountApplicabilityRow {
   customer?: { name?: string | null } | null;
 }
 
-/** `GET /api/backend/products` — filters + `order[column]` / `order[dir]`. */
+/** `GET /api/products` — filters + `order[column]` / `order[dir]`. */
 export interface IndexProductParams {
   tenant_id?: string|null;
   page?: number;

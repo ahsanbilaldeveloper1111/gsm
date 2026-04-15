@@ -35,7 +35,7 @@ export interface Customer {
   updated_at?: string;
 }
 
-/** `GET /api/backend/customers` — sort via `order[column]` / `order[dir]`. */
+/** `GET /api/customers` — sort via `order[column]` / `order[dir]`. */
 export interface IndexCustomerParams extends PaginationParams {
   search?: string;
   crm_company_id?: string | null;

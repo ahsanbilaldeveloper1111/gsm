@@ -4,10 +4,7 @@ import type { ApiSuccessResponse } from "@/lib/api/types";
 import { postJsonWithXhr } from "@/lib/auth/postJsonWithXhr";
 import { getXsrfHeadersForFetch } from "@/lib/auth/xsrfBrowser";
 import { apiRoutes } from "@/lib/routes/apiRoutes";
-import {
-  BILLING_BACKEND_PROXY_BASE,
-  getInternalNextOrigin,
-} from "@/lib/env";
+import { getAuthApiRequestBase } from "@/lib/env";
 import { User } from "@/models/User";
 import { fetchSanctumCsrfCookie } from "@/services/sanctum.service";
 
@@ -58,11 +55,11 @@ async function logLoginFlowServer(
 }
 
 /**
- * POST /api/backend/login — billing backend `ApiResponse` envelope with `data.access_token` (Sanctum),
+ * POST `/api/auth/login` (via this app’s `/api` proxy) — billing backend `ApiResponse` envelope with `data.access_token` (Sanctum),
  * or legacy flat JSON.
  *
  * Browser: `XMLHttpRequest` + UTF-8 JSON string (not Axios/fetch) so interceptors cannot replace the body with
- * `{ is_super_user: 1 }`. Server: `fetch` loopback to the billing-backend proxy.
+ * `{ is_super_user: 1 }`. Server: `fetch` loopback to the `/api` proxy.
  */
 export async function loginRequest(body: LoginPayload): Promise<LoginResult> {
   await fetchSanctumCsrfCookie();
@@ -73,9 +70,7 @@ export async function loginRequest(body: LoginPayload): Promise<LoginResult> {
     throw new Error("Email and password are required.");
   }
   const path = apiRoutes.auth.login();
-  const origin =
-    typeof window !== "undefined" ? "" : getInternalNextOrigin();
-  const url = `${origin}${BILLING_BACKEND_PROXY_BASE}${path}`;
+  const url = `${getAuthApiRequestBase()}${path}`;
   const payload = JSON.stringify({
     email: identifier,
     samaccountname: identifier,
@@ -227,7 +222,7 @@ const logoutPostConfig = {
   },
 };
 
-/** POST `…/api/backend/logout` (Axios base `/api/billing-backend` + `/logout`). */
+/** POST `…/api/logout` (Axios base `/api` + `/logout`). */
 export async function logoutRequest(): Promise<void> {
   try {
     // Same as login: billing backend `VerifyCsrfToken` expects a fresh `XSRF-TOKEN` + `X-XSRF-TOKEN` pair.

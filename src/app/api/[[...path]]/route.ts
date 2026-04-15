@@ -15,7 +15,7 @@ async function handle(
     base = getServerApiBaseUrl();
   } catch (e) {
     logBillingProxyEnvMissing({
-      route: "billing-backend",
+      route: "laravel-api",
       message: e instanceof Error ? e.message : String(e),
     });
     return Response.json(
@@ -29,7 +29,7 @@ async function handle(
   const targetUrl = `${base.replace(/\/$/, "")}${suffix}${search}`;
   return proxyRequestToUrl(req, targetUrl, {
     upstreamBaseUrl: base.replace(/\/$/, ""),
-    nextPrefix: "/api/billing-backend",
+    nextPrefix: "/api",
   });
 }
 
