@@ -25,5 +25,6 @@ export interface IndexNotificationParams {
   date_to?: string;
   sent_from?: string;
   sent_to?: string;
+  page?: number;
   per_page?: number;
 }

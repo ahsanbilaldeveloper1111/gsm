@@ -5,31 +5,44 @@ import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { usePortsByGsm } from "@/hooks/ports/usePorts";
 import { useUssd } from "@/hooks/ussd/useUssd";
+import {
+  dataTablesPaging,
+  deriveTotalsFromTelecomPagination,
+  gsmDropdownListParams,
+  useClampPageToLastPage,
+} from "@/lib/pagination/serverPagination";
 
 export function UssdModuleView() {
   const [gsmDraft, setGsmDraft] = useState<string>("");
   const [portDraft, setPortDraft] = useState<string>("");
   const [gsmFilter, setGsmFilter] = useState<string>("");
   const [portFilter, setPortFilter] = useState<string>("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
-  const gsmQuery = useGsm();
+  const gsmQuery = useGsm(gsmDropdownListParams);
   const portsQuery = usePortsByGsm(gsmDraft || null);
 
   const ussdParams = useMemo(
     () => ({
       gsm_id: gsmFilter || undefined,
       port_id: portFilter || undefined,
-      draw: 1,
-      start: 0,
-      length: 100,
+      ...dataTablesPaging(page, perPage),
     }),
-    [gsmFilter, portFilter],
+    [gsmFilter, portFilter, page, perPage],
   );
   const ussdQuery = useUssd(ussdParams);
 
   const gsmRows = gsmQuery.data?.rows ?? [];
   const portRows = portsQuery.data?.rows ?? [];
   const ussdRows = ussdQuery.data?.rows ?? [];
+  const pagination = ussdQuery.data?.pagination;
+  const { totalRows, totalPages } = deriveTotalsFromTelecomPagination(
+    pagination,
+    ussdRows.length,
+    perPage,
+  );
+  useClampPageToLastPage(pagination?.last_page, page, setPage);
   const columns = useMemo(
     () => [
       { key: "ip", header: "IP Address", render: (row: Record<string, unknown>) => String(row.ip_address ?? "-") },
@@ -94,6 +107,7 @@ export function UssdModuleView() {
             onClick={() => {
               setGsmFilter(gsmDraft);
               setPortFilter(portDraft);
+              setPage(1);
             }}
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
           >
@@ -112,6 +126,17 @@ export function UssdModuleView() {
           isLoading={ussdQuery.isPending}
           emptyMessage="No USSD records found"
           minWidthClassName="min-w-[48rem]"
+          initialPerPage={10}
+          paginationMode="server"
+          page={page}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(next) => {
+            setPerPage(next);
+            setPage(1);
+          }}
           getRowKey={(row, idx) => String((row as Record<string, unknown>).id ?? idx)}
         />
       </div>

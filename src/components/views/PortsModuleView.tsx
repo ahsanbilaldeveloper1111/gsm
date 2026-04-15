@@ -5,8 +5,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { usePorts, usePortsByGsm } from "@/hooks/ports/usePorts";
+import {
+  deriveTotalsFromTelecomPagination,
+  gsmDropdownListParams,
+  useClampPageToLastPage,
+} from "@/lib/pagination/serverPagination";
 import { queryKeys } from "@/lib/queryKeys";
 import { showAppToast, showBillingBackendErrorToast } from "@/lib/toast/appToast";
+import type { IndexPortParams } from "@/models/Port";
 import { portsService } from "@/services/ports.service";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 
@@ -73,12 +79,28 @@ export function PortsModuleView() {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<PortFilters>(defaultFilters);
   const [filters, setFilters] = useState<PortFilters>(defaultFilters);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
   const [edit, setEdit] = useState<PortEditModal>(null);
 
-  const gsmQuery = useGsm();
+  const gsmQuery = useGsm(gsmDropdownListParams);
   const companiesQuery = useCompanies();
   const portsByGsmQuery = usePortsByGsm(draft.gsm_id || null);
-  const portsQuery = usePorts(filters);
+  const listParams: IndexPortParams = useMemo(
+    () => ({
+      gsm_id: filters.gsm_id || undefined,
+      port_id: filters.port_id || undefined,
+      company_id: filters.company_id || undefined,
+      sim_status: filters.sim_status || undefined,
+      operator: filters.operator || undefined,
+      mobile_number: filters.mobile_number || undefined,
+      iccid: filters.iccid || undefined,
+      page,
+      perPage,
+    }),
+    [filters, page, perPage],
+  );
+  const portsQuery = usePorts(listParams);
 
   const gsmRows = gsmQuery.data?.rows ?? [];
   const companyRows = useMemo(
@@ -87,6 +109,13 @@ export function PortsModuleView() {
   );
   const gsmPortRows = portsByGsmQuery.data?.rows ?? [];
   const rows = portsQuery.data?.rows ?? [];
+  const pagination = portsQuery.data?.pagination;
+  const { totalRows, totalPages } = deriveTotalsFromTelecomPagination(
+    pagination,
+    rows.length,
+    perPage,
+  );
+  useClampPageToLastPage(pagination?.last_page, page, setPage);
 
   const syncMutation = useMutation({
     mutationFn: () => portsService.syncSimStatus(),
@@ -231,7 +260,10 @@ export function PortsModuleView() {
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => setFilters({ ...draft })}
+          onClick={() => {
+            setFilters({ ...draft });
+            setPage(1);
+          }}
           className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
         >
           Submit
@@ -241,6 +273,7 @@ export function PortsModuleView() {
           onClick={() => {
             setDraft(defaultFilters);
             setFilters(defaultFilters);
+            setPage(1);
           }}
           className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
         >
@@ -259,6 +292,16 @@ export function PortsModuleView() {
           emptyMessage="No ports found"
           minWidthClassName="min-w-[88rem]"
           initialPerPage={10}
+          paginationMode="server"
+          page={page}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(next) => {
+            setPerPage(next);
+            setPage(1);
+          }}
           getRowKey={(row, idx) => String(row.id ?? idx)}
         />
       </div>

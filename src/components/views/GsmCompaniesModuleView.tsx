@@ -9,6 +9,12 @@ import {
   useGsmAssignmentsMutations,
 } from "@/hooks/gsm-assignment/useGsmAssignments";
 import { useGsm } from "@/hooks/gsm/useGsm";
+import {
+  deriveTotalsFromTelecomPagination,
+  gsmDropdownListParams,
+  useClampPageToLastPage,
+} from "@/lib/pagination/serverPagination";
+import type { IndexGsmAssignmentParams } from "@/models/GsmAssignment";
 import { portsService } from "@/services/ports.service";
 import { gsmAssignmentsService } from "@/services/gsm-assignments.service";
 import { showAppToast, showBillingBackendErrorToast } from "@/lib/toast/appToast";
@@ -52,13 +58,31 @@ export function GsmCompaniesModuleView() {
   const [unassignPortId, setUnassignPortId] = useState("");
   const [smsForm, setSmsForm] = useState({ mobile: "", message: "", port: "" });
   const [ussdForm, setUssdForm] = useState({ text: "", port: "" });
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
-  const assignmentsQuery = useGsmAssignments(filters);
-  const gsmQuery = useGsm();
+  const assignmentParams: IndexGsmAssignmentParams = useMemo(
+    () => ({
+      gsm_id: filters.gsm_id || undefined,
+      company_id: filters.company_id || undefined,
+      page,
+      perPage,
+    }),
+    [filters, page, perPage],
+  );
+  const assignmentsQuery = useGsmAssignments(assignmentParams);
+  const gsmQuery = useGsm(gsmDropdownListParams);
   const companiesQuery = useCompanies();
 
   const { create, update, destroy } = useGsmAssignmentsMutations();
   const rows = assignmentsQuery.data?.rows ?? [];
+  const listPagination = assignmentsQuery.data?.pagination;
+  const { totalRows, totalPages } = deriveTotalsFromTelecomPagination(
+    listPagination,
+    rows.length,
+    perPage,
+  );
+  useClampPageToLastPage(listPagination?.last_page, page, setPage);
   const gsmRows = gsmQuery.data?.rows ?? [];
   const companyRows = useMemo(() => extractRows(companiesQuery.data), [companiesQuery.data]);
   const columns = useMemo(
@@ -222,7 +246,10 @@ export function GsmCompaniesModuleView() {
         <div className="flex items-end gap-2">
           <button
             type="button"
-            onClick={() => setFilters({ ...draft })}
+            onClick={() => {
+              setFilters({ ...draft });
+              setPage(1);
+            }}
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
           >
             Submit
@@ -245,6 +272,17 @@ export function GsmCompaniesModuleView() {
           isLoading={assignmentsQuery.isPending}
           emptyMessage="No GSM company assignments found"
           minWidthClassName="min-w-[90rem]"
+          initialPerPage={10}
+          paginationMode="server"
+          page={page}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(next) => {
+            setPerPage(next);
+            setPage(1);
+          }}
           getRowKey={(row, idx) => String((row as Record<string, unknown>).id ?? idx)}
         />
       </div>

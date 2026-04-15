@@ -10,6 +10,10 @@ import {
   useNotificationStatisticsWithParams,
 } from "@/hooks/notifications/useNotifications";
 import { showAppToast, showBillingBackendErrorToast } from "@/lib/toast/appToast";
+import {
+  deriveTotalsFromTelecomPagination,
+  useClampPageToLastPage,
+} from "@/lib/pagination/serverPagination";
 import { notificationsService } from "@/services/notifications.service";
 
 type TabId = "list" | "statistics" | "by-mobile" | "send" | "show";
@@ -59,6 +63,8 @@ export function NotificationsModuleView() {
     notification_type: "",
   });
   const [mobileSearchEnabled, setMobileSearchEnabled] = useState(false);
+  const [mobilePage, setMobilePage] = useState(1);
+  const [mobilePerPage, setMobilePerPage] = useState(15);
 
   const [showId, setShowId] = useState<number | null>(null);
   const [showEnabled, setShowEnabled] = useState(false);
@@ -98,7 +104,8 @@ export function NotificationsModuleView() {
       mobile_number: mobileFilters.mobile_number || undefined,
       status: mobileFilters.status || undefined,
       notification_type: mobileFilters.notification_type || undefined,
-      per_page: 15,
+      page: mobilePage,
+      per_page: mobilePerPage,
     },
     mobileSearchEnabled,
   );
@@ -125,9 +132,13 @@ export function NotificationsModuleView() {
   const listCurrent = listPg?.current_page ?? listPage;
   const listLast = listPg?.last_page ?? 1;
   const listTotal = listPg?.total ?? listRows.length;
+  useClampPageToLastPage(listPg?.last_page, listPage, setListPage);
 
   const byMobileRows = byMobile.data?.rows ?? [];
-  const byMobileTotal = byMobile.data?.pagination?.total ?? byMobileRows.length;
+  const byMobilePg = byMobile.data?.pagination;
+  const { totalRows: byMobileTotalRows, totalPages: byMobileTotalPages } =
+    deriveTotalsFromTelecomPagination(byMobilePg, byMobileRows.length, mobilePerPage);
+  useClampPageToLastPage(byMobilePg?.last_page, mobilePage, setMobilePage);
 
   const statsData = (stats.data ?? {}) as Record<string, unknown>;
   const listColumns = useMemo(
@@ -353,7 +364,10 @@ export function NotificationsModuleView() {
             <div className="flex items-end">
               <button
                 type="button"
-                onClick={() => setMobileSearchEnabled(true)}
+                onClick={() => {
+                  setMobileSearchEnabled(true);
+                  setMobilePage(1);
+                }}
                 className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
               >
                 Search
@@ -366,9 +380,20 @@ export function NotificationsModuleView() {
             isLoading={byMobile.isPending}
             emptyMessage="No notifications"
             minWidthClassName="min-w-[56rem]"
+            initialPerPage={15}
+            paginationMode="server"
+            page={mobilePage}
+            totalPages={byMobileTotalPages}
+            totalRows={byMobileTotalRows}
+            perPage={mobilePerPage}
+            perPageOptions={[15, 25, 50]}
+            onPageChange={setMobilePage}
+            onPerPageChange={(next) => {
+              setMobilePerPage(next);
+              setMobilePage(1);
+            }}
             getRowKey={(row, idx) => String((row as Record<string, unknown>).id ?? idx)}
           />
-          <p className="text-xs text-zinc-500">Total: {byMobileTotal}</p>
         </div>
       ) : null}
 

@@ -6,9 +6,18 @@ import { useCompanies } from "@/hooks/company/useCompanies";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { queryKeys } from "@/lib/queryKeys";
 import { showAppToast, showBillingBackendErrorToast } from "@/lib/toast/appToast";
-import type { CreateGsmPayload, GsmDevice, UpdateGsmPayload } from "@/models/Gsm";
+import type {
+  CreateGsmPayload,
+  GsmDevice,
+  IndexGsmParams,
+  UpdateGsmPayload,
+} from "@/models/Gsm";
 import { gsmService } from "@/services/gsm.service";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
+import {
+  deriveTotalsFromTelecomPagination,
+  useClampPageToLastPage,
+} from "@/lib/pagination/serverPagination";
 
 type GsmForm = {
   name: string;
@@ -53,7 +62,8 @@ export function GsmModuleView() {
     device_status: "",
   });
   const [filters, setFilters] = useState(draft);
-
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
@@ -63,9 +73,30 @@ export function GsmModuleView() {
   const [addForm, setAddForm] = useState<GsmForm>(emptyForm);
   const [editForm, setEditForm] = useState<GsmForm>(emptyForm);
 
-  const gsmQuery = useGsm(filters);
+  const listParams: IndexGsmParams = useMemo(
+    () => ({
+      ip_address: filters.ip_address || undefined,
+      name: filters.name || undefined,
+      status: filters.status || undefined,
+      device_status: filters.device_status || undefined,
+      page,
+      perPage,
+    }),
+    [filters, page, perPage],
+  );
+
+  const gsmQuery = useGsm(listParams);
   const companiesQuery = useCompanies();
   const rows = gsmQuery.data?.rows ?? [];
+  const pagination = gsmQuery.data?.pagination;
+
+  const { totalRows, totalPages } = deriveTotalsFromTelecomPagination(
+    pagination,
+    rows.length,
+    perPage,
+  );
+  useClampPageToLastPage(pagination?.last_page, page, setPage);
+
   const companyRows = useMemo(() => extractRows(companiesQuery.data), [companiesQuery.data]);
 
   const refreshGsm = () =>
@@ -259,7 +290,10 @@ export function GsmModuleView() {
           <div className="flex items-end lg:col-span-2">
             <button
               type="button"
-              onClick={() => setFilters({ ...draft })}
+              onClick={() => {
+                setFilters({ ...draft });
+                setPage(1);
+              }}
               className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto dark:bg-emerald-600 dark:hover:bg-emerald-500"
             >
               Apply filters
@@ -291,6 +325,13 @@ export function GsmModuleView() {
           emptyMessage="No GSM records found"
           minWidthClassName="min-w-[72rem]"
           initialPerPage={10}
+          paginationMode="server"
+          page={page}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={setPerPage}
           getRowKey={(row, idx) => String(row.id ?? idx)}
         />
       </div>

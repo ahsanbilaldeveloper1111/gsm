@@ -3,6 +3,7 @@ import { getBillingBackendHttpsAgent } from "@/lib/api/nodeTlsAgent";
 import {
   BILLING_BACKEND_PROXY_BASE,
   getAxiosBaseUrl,
+  TELECOM_API_DATA_TYPE,
   useSameOriginApiProxy,
 } from "@/lib/env";
 import { apiRoutes } from "@/lib/routes/apiRoutes";
@@ -168,6 +169,7 @@ function applyRequestInterceptors(client: AxiosInstance): void {
     config.params = {
       ...baseParams,
       ...(addSuperUserToQuery ? { [SUPER_Q]: SUPER_V } : {}),
+      data_type: TELECOM_API_DATA_TYPE,
     };
 
     if (!config.headers.get("Accept") && !config.headers.get("accept")) {
@@ -227,26 +229,17 @@ let refreshTokenPromise: Promise<boolean> | null = null;
 
 async function fetchTokenSilently(): Promise<boolean> {
   if (typeof window === "undefined") return false;
-  const baseURL = getAxiosBaseUrl();
-  const agent = getBillingBackendHttpsAgent();
-  const headers: Record<string, string> = { Accept: "application/json" };
-  const fakeConfig = {
-    headers: new axios.AxiosHeaders(),
-  } as InternalAxiosRequestConfig;
-  applyXsrfHeaderFromCookie(fakeConfig);
-  const xsrfHeader = fakeConfig.headers.get(XSRF_HEADER);
-  if (typeof xsrfHeader === "string" && xsrfHeader.trim()) {
-    headers[XSRF_HEADER] = xsrfHeader;
+  try {
+    const client = getApiClient();
+    const res = await client.post(
+      apiRoutes.token.getTokenPost(),
+      {},
+      { validateStatus: (status) => status >= 200 && status < 300 },
+    );
+    return res.status >= 200 && res.status < 300;
+  } catch {
+    return false;
   }
-  const path = `${apiRoutes.token.getTokenPost()}?${SUPER_Q}=${SUPER_V}`;
-  const res = await axios.post(path, {}, {
-    baseURL,
-    withCredentials: true,
-    headers,
-    httpsAgent: agent,
-    validateStatus: (status) => status >= 200 && status < 300,
-  });
-  return res.status >= 200 && res.status < 300;
 }
 
 async function refreshTokenWithLock(): Promise<boolean> {

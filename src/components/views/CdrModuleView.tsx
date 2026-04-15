@@ -5,6 +5,12 @@ import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useCdr } from "@/hooks/cdr/useCdr";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { usePortsByGsm } from "@/hooks/ports/usePorts";
+import {
+  dataTablesPaging,
+  deriveTotalsFromTelecomPagination,
+  gsmDropdownListParams,
+  useClampPageToLastPage,
+} from "@/lib/pagination/serverPagination";
 
 function formatDateTime(input?: string): string {
   if (!input) return "-";
@@ -29,8 +35,10 @@ export function CdrModuleView() {
     answer_date: "",
   });
   const [filters, setFilters] = useState(draft);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
-  const gsmQuery = useGsm();
+  const gsmQuery = useGsm(gsmDropdownListParams);
   const portsQuery = usePortsByGsm(draft.gsm_id || null);
 
   const cdrParams = useMemo(
@@ -41,17 +49,22 @@ export function CdrModuleView() {
       destination_number: filters.destination_number || undefined,
       start_date: filters.start_date || undefined,
       answer_date: filters.answer_date || undefined,
-      draw: 1,
-      start: 0,
-      length: 100,
+      ...dataTablesPaging(page, perPage),
     }),
-    [filters],
+    [filters, page, perPage],
   );
   const cdrQuery = useCdr(cdrParams);
 
   const gsmRows = gsmQuery.data?.rows ?? [];
   const portRows = portsQuery.data?.rows ?? [];
   const rows = cdrQuery.data?.rows ?? [];
+  const pagination = cdrQuery.data?.pagination;
+  const { totalRows, totalPages } = deriveTotalsFromTelecomPagination(
+    pagination,
+    rows.length,
+    perPage,
+  );
+  useClampPageToLastPage(pagination?.last_page, page, setPage);
   const columns = useMemo(
     () => [
       { key: "ip_address", header: "IP Address", render: (row: Record<string, unknown>) => String(row.ip_address ?? "-") },
@@ -135,6 +148,7 @@ export function CdrModuleView() {
             };
             setDraft(empty);
             setFilters(empty);
+            setPage(1);
           }}
           className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
         >
@@ -142,7 +156,10 @@ export function CdrModuleView() {
         </button>
         <button
           type="button"
-          onClick={() => setFilters({ ...draft })}
+          onClick={() => {
+            setFilters({ ...draft });
+            setPage(1);
+          }}
           className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
         >
           Submit
@@ -159,6 +176,17 @@ export function CdrModuleView() {
           isLoading={cdrQuery.isPending}
           emptyMessage="No CDR records found"
           minWidthClassName="min-w-[110rem]"
+          initialPerPage={10}
+          paginationMode="server"
+          page={page}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(next) => {
+            setPerPage(next);
+            setPage(1);
+          }}
           getRowKey={(row, idx) => String((row as Record<string, unknown>).id ?? idx)}
         />
       </div>

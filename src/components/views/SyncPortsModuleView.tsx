@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useGsm } from "@/hooks/gsm/useGsm";
+import { gsmDropdownListParams } from "@/lib/pagination/serverPagination";
 import { usePortsByGsm } from "@/hooks/ports/usePorts";
 import { showAppToast, showBillingBackendErrorToast } from "@/lib/toast/appToast";
 import { portsService } from "@/services/ports.service";
@@ -19,7 +20,7 @@ export function SyncPortsModuleView() {
   const [gsmId, setGsmId] = useState<string>("");
   const [selectedPorts, setSelectedPorts] = useState<string[]>([]);
 
-  const gsmQuery = useGsm();
+  const gsmQuery = useGsm(gsmDropdownListParams);
   const portsQuery = usePortsByGsm(gsmId || null);
 
   const gsmRows = gsmQuery.data?.rows ?? [];

@@ -5,6 +5,12 @@ import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { useInbox } from "@/hooks/inbox/useInbox";
 import { usePortsByGsm } from "@/hooks/ports/usePorts";
+import {
+  dataTablesPaging,
+  deriveTotalsFromTelecomPagination,
+  gsmDropdownListParams,
+  useClampPageToLastPage,
+} from "@/lib/pagination/serverPagination";
 
 function formatDateTime(input?: string): string {
   if (!input) return "-";
@@ -27,8 +33,10 @@ export function InboxModuleView() {
     message: "",
   });
   const [filters, setFilters] = useState(draft);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
-  const gsmQuery = useGsm();
+  const gsmQuery = useGsm(gsmDropdownListParams);
   const portsQuery = usePortsByGsm(draft.gsm_id || null);
 
   const inboxParams = useMemo(
@@ -37,17 +45,22 @@ export function InboxModuleView() {
       port_id: filters.port_id || undefined,
       sender: filters.sender || undefined,
       message: filters.message || undefined,
-      draw: 1,
-      start: 0,
-      length: 100,
+      ...dataTablesPaging(page, perPage),
     }),
-    [filters],
+    [filters, page, perPage],
   );
   const inboxQuery = useInbox(inboxParams);
 
   const gsmRows = gsmQuery.data?.rows ?? [];
   const portRows = portsQuery.data?.rows ?? [];
   const rows = inboxQuery.data?.rows ?? [];
+  const pagination = inboxQuery.data?.pagination;
+  const { totalRows, totalPages } = deriveTotalsFromTelecomPagination(
+    pagination,
+    rows.length,
+    perPage,
+  );
+  useClampPageToLastPage(pagination?.last_page, page, setPage);
   const columns = useMemo(
     () => [
       { key: "gsm", header: "GSM", render: (row: Record<string, unknown>) => String((row.gsm as Record<string, unknown> | undefined)?.name ?? "-") },
@@ -128,7 +141,10 @@ export function InboxModuleView() {
         <div className="flex items-end gap-2 md:col-span-2">
           <button
             type="button"
-            onClick={() => setFilters({ ...draft })}
+            onClick={() => {
+              setFilters({ ...draft });
+              setPage(1);
+            }}
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
           >
             Submit
@@ -139,6 +155,7 @@ export function InboxModuleView() {
               const empty = { gsm_id: "", port_id: "", sender: "", message: "" };
               setDraft(empty);
               setFilters(empty);
+              setPage(1);
             }}
             className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
           >
@@ -157,6 +174,17 @@ export function InboxModuleView() {
           isLoading={inboxQuery.isPending}
           emptyMessage="No inbox records found"
           minWidthClassName="min-w-[72rem]"
+          initialPerPage={10}
+          paginationMode="server"
+          page={page}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(next) => {
+            setPerPage(next);
+            setPage(1);
+          }}
           getRowKey={(row, idx) => String((row as Record<string, unknown>).id ?? idx)}
         />
       </div>

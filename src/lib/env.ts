@@ -23,6 +23,9 @@
  * `1`, `true`, `yes`, or `on` (see `instrumentation.ts` + `getBillingBackendHttpsAgent()`).
  */
 
+/** Laravel telecom / GSM API mode: sent as `data_type=external` on requests (query + login URL). */
+export const TELECOM_API_DATA_TYPE = "external";
+
 /** Next.js same-origin prefix; proxies to Laravel `{origin}/api/*`. */
 export const BILLING_BACKEND_PROXY_BASE = "/api";
 

@@ -5,8 +5,13 @@ import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { useSimMutations, useSims } from "@/hooks/sims/useSims";
+import {
+  deriveTotalsFromTelecomPagination,
+  gsmDropdownListParams,
+  useClampPageToLastPage,
+} from "@/lib/pagination/serverPagination";
 import { showAppToast, showBillingBackendErrorToast } from "@/lib/toast/appToast";
-import type { Sim } from "@/models/Sim";
+import type { IndexSimParams, Sim } from "@/models/Sim";
 
 type SimForm = {
   sim_number: string;
@@ -44,18 +49,39 @@ export function SimManagementView() {
     status: "",
   });
   const [filters, setFilters] = useState(filtersDraft);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editId, setEditId] = useState<number | string | null>(null);
   const [addForm, setAddForm] = useState<SimForm>(emptyForm);
   const [editForm, setEditForm] = useState<SimForm>(emptyForm);
 
-  const simsQuery = useSims(filters);
-  const gsmQuery = useGsm();
+  const listParams: IndexSimParams = useMemo(
+    () => ({
+      gsm_id: filters.gsm_id || undefined,
+      company_id: filters.company_id || undefined,
+      sim_number: filters.sim_number || undefined,
+      iccid: filters.iccid || undefined,
+      status: filters.status || undefined,
+      page,
+      perPage,
+    }),
+    [filters, page, perPage],
+  );
+  const simsQuery = useSims(listParams);
+  const gsmQuery = useGsm(gsmDropdownListParams);
   const companiesQuery = useCompanies();
   const { create, update, destroy } = useSimMutations();
 
   const simRows = simsQuery.data?.rows ?? [];
+  const pagination = simsQuery.data?.pagination;
+  const { totalRows, totalPages } = deriveTotalsFromTelecomPagination(
+    pagination,
+    simRows.length,
+    perPage,
+  );
+  useClampPageToLastPage(pagination?.last_page, page, setPage);
   const gsmRows = gsmQuery.data?.rows ?? [];
   const companyRows = useMemo(
     () => extractRows(companiesQuery.data),
@@ -110,6 +136,7 @@ export function SimManagementView() {
 
   function onApplyFilters() {
     setFilters({ ...filtersDraft });
+    setPage(1);
   }
 
   function openEdit(row: Sim) {
@@ -251,6 +278,17 @@ export function SimManagementView() {
           isLoading={simsQuery.isPending}
           emptyMessage="No SIM records found"
           minWidthClassName="min-w-[60rem]"
+          initialPerPage={10}
+          paginationMode="server"
+          page={page}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(next) => {
+            setPerPage(next);
+            setPage(1);
+          }}
           getRowKey={(row, idx) => String(row.id ?? idx)}
         />
       </div>

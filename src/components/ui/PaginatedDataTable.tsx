@@ -108,9 +108,14 @@ export function PaginatedDataTable<T>({
   }, [isServerMode, rows, resolvedPerPage, safePage]);
 
   const startRow = calculatedTotalRows === 0 ? 0 : (safePage - 1) * resolvedPerPage + 1;
-  const endRow = isServerMode
-    ? Math.min(startRow + rows.length - 1, calculatedTotalRows)
-    : Math.min(safePage * resolvedPerPage, calculatedTotalRows);
+  const endRow =
+    calculatedTotalRows === 0
+      ? 0
+      : isServerMode
+        ? rows.length === 0
+          ? 0
+          : Math.min(startRow + rows.length - 1, calculatedTotalRows)
+        : Math.min(safePage * resolvedPerPage, calculatedTotalRows);
 
   function handlePerPageChange(nextPerPage: number) {
     if (isServerMode) {

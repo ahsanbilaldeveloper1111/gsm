@@ -5,6 +5,12 @@ import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { useOutbox } from "@/hooks/outbox/useOutbox";
 import { usePortsByGsm } from "@/hooks/ports/usePorts";
+import {
+  dataTablesPaging,
+  deriveTotalsFromTelecomPagination,
+  gsmDropdownListParams,
+  useClampPageToLastPage,
+} from "@/lib/pagination/serverPagination";
 
 function formatDateTime(input?: string): string {
   if (!input) return "-";
@@ -24,25 +30,32 @@ export function OutboxModuleView() {
   const [portDraft, setPortDraft] = useState<string>("");
   const [gsmFilter, setGsmFilter] = useState<string>("");
   const [portFilter, setPortFilter] = useState<string>("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
-  const gsmQuery = useGsm();
+  const gsmQuery = useGsm(gsmDropdownListParams);
   const portsQuery = usePortsByGsm(gsmDraft || null);
 
   const outboxParams = useMemo(
     () => ({
       gsm_id: gsmFilter || undefined,
       port_id: portFilter || undefined,
-      draw: 1,
-      start: 0,
-      length: 100,
+      ...dataTablesPaging(page, perPage),
     }),
-    [gsmFilter, portFilter],
+    [gsmFilter, portFilter, page, perPage],
   );
   const outboxQuery = useOutbox(outboxParams);
 
   const gsmRows = gsmQuery.data?.rows ?? [];
   const portRows = portsQuery.data?.rows ?? [];
   const outboxRows = outboxQuery.data?.rows ?? [];
+  const pagination = outboxQuery.data?.pagination;
+  const { totalRows, totalPages } = deriveTotalsFromTelecomPagination(
+    pagination,
+    outboxRows.length,
+    perPage,
+  );
+  useClampPageToLastPage(pagination?.last_page, page, setPage);
   const columns = useMemo(
     () => [
       { key: "ip", header: "IP Address", render: (row: Record<string, unknown>) => String(row.ip_address ?? "-") },
@@ -103,6 +116,7 @@ export function OutboxModuleView() {
             onClick={() => {
               setGsmFilter(gsmDraft);
               setPortFilter(portDraft);
+              setPage(1);
             }}
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
           >
@@ -121,6 +135,17 @@ export function OutboxModuleView() {
           isLoading={outboxQuery.isPending}
           emptyMessage="No outbox records found"
           minWidthClassName="min-w-[56rem]"
+          initialPerPage={10}
+          paginationMode="server"
+          page={page}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(next) => {
+            setPerPage(next);
+            setPage(1);
+          }}
           getRowKey={(row, idx) => String((row as Record<string, unknown>).id ?? idx)}
         />
       </div>

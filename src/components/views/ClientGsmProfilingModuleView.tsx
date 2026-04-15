@@ -4,6 +4,12 @@ import { useMemo, useState } from "react";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useGsm, useGsmClientProfile } from "@/hooks/gsm/useGsm";
+import {
+  dataTablesPaging,
+  deriveTotalsFromTelecomPagination,
+  gsmDropdownListParams,
+  useClampPageToLastPage,
+} from "@/lib/pagination/serverPagination";
 
 function extractRows(data: unknown): Array<Record<string, unknown>> {
   if (!data || typeof data !== "object") return [];
@@ -35,25 +41,32 @@ function splitByPipe(input: unknown): string[] {
 export function ClientGsmProfilingModuleView() {
   const [draft, setDraft] = useState({ company_id: "", gsm_id: "" });
   const [filters, setFilters] = useState(draft);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
   const companiesQuery = useCompanies();
-  const gsmQuery = useGsm();
+  const gsmQuery = useGsm(gsmDropdownListParams);
   const profileQuery = useGsmClientProfile(
     useMemo(
       () => ({
         company_id: filters.company_id || undefined,
         gsm_id: filters.gsm_id || undefined,
-        draw: 1,
-        start: 0,
-        length: 100,
+        ...dataTablesPaging(page, perPage),
       }),
-      [filters],
+      [filters, page, perPage],
     ),
   );
 
   const companyRows = useMemo(() => extractRows(companiesQuery.data), [companiesQuery.data]);
   const gsmRows = gsmQuery.data?.rows ?? [];
   const rows = profileQuery.data?.rows ?? [];
+  const pagination = profileQuery.data?.pagination;
+  const { totalRows, totalPages } = deriveTotalsFromTelecomPagination(
+    pagination,
+    rows.length,
+    perPage,
+  );
+  useClampPageToLastPage(pagination?.last_page, page, setPage);
   const columns = useMemo(
     () => [
       { key: "company_name", header: "Company Name", render: (row: Record<string, unknown>) => String(row.company_name ?? "-") },
@@ -113,7 +126,10 @@ export function ClientGsmProfilingModuleView() {
         <div className="flex items-end">
           <button
             type="button"
-            onClick={() => setFilters({ ...draft })}
+            onClick={() => {
+              setFilters({ ...draft });
+              setPage(1);
+            }}
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
           >
             Submit
@@ -132,6 +148,17 @@ export function ClientGsmProfilingModuleView() {
           loadingMessage="Loading data..."
           emptyMessage="No profiling rows found"
           minWidthClassName="min-w-[64rem]"
+          initialPerPage={10}
+          paginationMode="server"
+          page={page}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(next) => {
+            setPerPage(next);
+            setPage(1);
+          }}
           getRowKey={(row, idx) => String((row as Record<string, unknown>).id ?? idx)}
         />
       </div>
