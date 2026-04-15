@@ -6,9 +6,9 @@ import { CreateUpdateCustomerModal } from "@/components/customers/CreateUpdateCu
 import { CustomerListTable } from "@/components/customers/CustomerListTable";
 import { ViewCustomerModal } from "@/components/customers/ViewCustomerModal";
 import { DeleteConfirmationDialog } from "@/components/crud/DeleteConfirmationDialog";
+import { CollapsibleFilterPanel } from "@/components/crud/ListUiControls";
 import { CrmCustomerSearchableDropdown } from "@/components/ui/CrmCustomerSearchableDropdown";
 import { TenantSearchableDropdown } from "@/components/ui/TenantSearchableDropdown";
-import { useCompanies } from "@/hooks/company/useCompanies";
 import { useTenantDisplayNameMap } from "@/hooks/company/useTenantDisplayNameMap";
 import { useCrmCompanyNameMap } from "@/hooks/crm/useCrmCompanyNameMap";
 import { useCustomerMutations } from "@/hooks/customers/useCustomerMutations";
@@ -28,7 +28,6 @@ import {
   showAppToast,
   showBillingBackendErrorToast,
 } from "@/lib/toast/appToast";
-import type { Company, IndexCompanyParams } from "@/models/Company";
 import type { Customer, IndexCustomerParams } from "@/models/Customer";
 
 const LIMIT_OPTIONS = [10, 20, 25, 50, 100] as const;
@@ -115,23 +114,6 @@ export function CustomerCrudView() {
   });
   const { pagination } = extractListRows(listQuery.data);
 
-  const tenantPickerParams = useMemo((): IndexCompanyParams => {
-    const vendorRaw = listState.vendor_id.trim();
-    const vendorNum = vendorRaw ? Number.parseInt(vendorRaw, 10) : NaN;
-    return {
-      limit: 800,
-      page: 1,
-      ...(Number.isFinite(vendorNum) ? { vendor_id: vendorNum } : {}),
-    };
-  }, [listState.vendor_id]);
-
-  const tenantsForPicker = useCompanies(tenantPickerParams, {
-    enabled: isSuperAdmin && !isUserLoading,
-  });
-  const tenantRows = extractListRows<Company & Record<string, unknown>>(
-    tenantsForPicker.data,
-  ).rows;
-
   const vendorsForPicker = useVendors(
     {
       limit: 500,
@@ -145,34 +127,12 @@ export function CustomerCrudView() {
     name: string;
   }[];
 
-  const customerPickerParams = useMemo((): IndexCustomerParams => {
-    const tenant = listState.tenant_id.trim();
-    return {
-      page: 1,
-      limit: 500,
-      tenant_id: tenant,
-      load_profile: false,
-      load_invoices_count: false,
-      "order[column]": "name",
-      "order[dir]": "asc",
-    };
-  }, [listState.tenant_id]);
-
-  const customersForPicker = useCustomers(customerPickerParams, {
-    enabled:
-      isSuperAdmin &&
-      !isUserLoading &&
-      listState.tenant_id.trim().length > 0,
-  });
-  const customerPickerRows = extractListRows<Customer & Record<string, unknown>>(
-    customersForPicker.data,
-  ).rows;
-
   const mutations = useCustomerMutations();
   const [viewCustomerId, setViewCustomerId] = useState<string | null>(null);
   const [editId, setEditId] = useState<number | string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const deleteItemLabel = useMemo(() => {
     if (deleteId == null) return undefined;
@@ -258,10 +218,11 @@ export function CustomerCrudView() {
         </h2>
       </div>
 
-      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white/60 p-4 dark:border-zinc-800/80 dark:bg-zinc-950/40">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          List filters — GET /customers
-        </p>
+      <CollapsibleFilterPanel
+        title="List filters — GET /customers"
+        open={showFilters}
+        onToggle={() => setShowFilters((v) => !v)}
+      >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <div className="sm:col-span-2">
             <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
@@ -363,30 +324,8 @@ export function CustomerCrudView() {
               Choose a tenant first to filter by CRM customer.
             </p>
           </div>
-          <div>
-            <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-              Page size
-            </label>
-            <select
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={listState.limit}
-              onChange={(e) =>
-                setListState((s) => ({
-                  ...s,
-                  limit: Number(e.target.value),
-                  page: 1,
-                }))
-              }
-            >
-              {LIMIT_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  {n} per page
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
-      </div>
+      </CollapsibleFilterPanel>
 
       <CustomerListTable
         query={listQuery}
@@ -396,6 +335,9 @@ export function CustomerCrudView() {
         onSort={handleSort}
         pagination={pagination}
         onPageChange={(page) => setListState((s) => ({ ...s, page }))}
+        limit={listState.limit}
+        limitOptions={LIMIT_OPTIONS}
+        onLimitChange={(limit) => setListState((s) => ({ ...s, limit, page: 1 }))}
         tenantNameMap={tenantNameMap}
         crmCompanyNameMap={crmCompanyNameMap}
         canView

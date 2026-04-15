@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useDisplayCurrency } from "@/contexts/currency-display-context";
+import { useDashboardAnalyticsCurrency } from "@/contexts/dashboard-analytics-currency-context";
 import {
   asArray,
   toFiniteNumber,
@@ -243,14 +243,14 @@ type ChartsSectionProps = {
   error: Error | null;
 };
 
+/** Must render under {@link DashboardAnalyticsCurrencyProvider}. */
 export function DashboardChartsSection({
   payload,
   isLoading,
   isError,
   error,
 }: ChartsSectionProps) {
-  const { formatInCurrency, computedDefault } = useDisplayCurrency();
-  const fmtMoney = (n: number) => formatInCurrency(n, computedDefault);
+  const { formatAnalyticsAmount: fmtMoney } = useDashboardAnalyticsCurrency();
 
   const data = unwrapApiSuccessData<DashboardChartsData>(payload);
 

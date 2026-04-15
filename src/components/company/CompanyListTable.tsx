@@ -1,7 +1,12 @@
 "use client";
 
 import type { UseQueryResult } from "@tanstack/react-query";
+import {
+  TableListHeaderControls,
+  TablePaginationControls,
+} from "@/components/crud/ListUiControls";
 import type { ApiPagination, ApiSuccessResponse } from "@/lib/api/types";
+import { useDisplayCurrency } from "@/contexts/currency-display-context";
 import { extractListRows } from "@/lib/api/extractApiData";
 import { useMainAppResellerNameMap } from "@/hooks/resellers/useMainAppResellerNameMap";
 import type { Company } from "@/models/Company";
@@ -26,6 +31,9 @@ type CompanyListTableProps = {
   onSort: (column: string) => void;
   pagination: ApiPagination | undefined;
   onPageChange: (page: number) => void;
+  limit: number;
+  limitOptions: readonly number[];
+  onLimitChange: (limit: number) => void;
   canView: boolean;
   canCreate: boolean;
   canUpdate: boolean;
@@ -56,21 +64,6 @@ function SortChevron({
       {dir === "asc" ? "↑" : "↓"}
     </span>
   );
-}
-
-function formatMoney(amount: number | undefined, currency: string): string {
-  const c = currency || "USD";
-  const n = typeof amount === "number" && Number.isFinite(amount) ? amount : 0;
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: c,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(n);
-  } catch {
-    return `${c} ${n.toFixed(2)}`;
-  }
 }
 
 function displayName(
@@ -105,6 +98,9 @@ export function CompanyListTable({
   onSort,
   pagination,
   onPageChange,
+  limit,
+  limitOptions,
+  onLimitChange,
   canView,
   canCreate,
   canUpdate,
@@ -116,6 +112,7 @@ export function CompanyListTable({
   onProductPricing,
 }: CompanyListTableProps) {
   const mainAppResellerNameMap = useMainAppResellerNameMap();
+  const { formatInCurrency } = useDisplayCurrency();
 
   if (query.isPending) {
     return (
@@ -163,21 +160,14 @@ export function CompanyListTable({
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950/40">
-        <div className="border-b border-zinc-200/60 bg-zinc-50/80 px-4 py-2 dark:border-zinc-800 dark:bg-zinc-900/50">
-          <span className="text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
-            {title}
-          </span>
-          {pagination ? (
-            <span className="ml-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-              Page {pagination.page} of {pagination.last_page} ·{" "}
-              {pagination.total} total
-            </span>
-          ) : (
-            <span className="ml-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-              {companies.length} row{companies.length === 1 ? "" : "s"}
-            </span>
-          )}
-        </div>
+        <TableListHeaderControls
+          title={title}
+          pagination={pagination}
+          rowCount={companies.length}
+          limit={limit}
+          limitOptions={limitOptions}
+          onLimitChange={onLimitChange}
+        />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[52rem] border-collapse text-left text-xs">
             <thead>
@@ -225,9 +215,12 @@ export function CompanyListTable({
                   const credit =
                     c.profile?.credit_limit != null &&
                     c.profile.credit_limit > 0
-                      ? formatMoney(c.profile.credit_limit, cur)
+                      ? formatInCurrency(
+                          Number(c.profile.credit_limit),
+                          cur,
+                        )
                       : null;
-                  const outstanding = formatMoney(
+                  const outstanding = formatInCurrency(
                     c.profile?.outstanding_amount ?? 0,
                     cur,
                   );
@@ -322,29 +315,10 @@ export function CompanyListTable({
         </div>
       </div>
 
-      {pagination && pagination.last_page > 1 ? (
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            disabled={pagination.page <= 1}
-            onClick={() => onPageChange(pagination.page - 1)}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Page {pagination.page} / {pagination.last_page}
-          </span>
-          <button
-            type="button"
-            disabled={pagination.page >= pagination.last_page}
-            onClick={() => onPageChange(pagination.page + 1)}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900"
-          >
-            Next
-          </button>
-        </div>
-      ) : null}
+      <TablePaginationControls
+        pagination={pagination}
+        onPageChange={onPageChange}
+      />
 
       <details className="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/80">
         <summary className="cursor-pointer px-4 py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">

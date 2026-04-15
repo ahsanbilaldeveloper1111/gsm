@@ -1,6 +1,10 @@
 "use client";
 
 import type { UseQueryResult } from "@tanstack/react-query";
+import {
+  TableListHeaderControls,
+  TablePaginationControls,
+} from "@/components/crud/ListUiControls";
 import type { ApiPagination, ApiSuccessResponse } from "@/lib/api/types";
 import { extractListRows } from "@/lib/api/extractApiData";
 import type { Vendor } from "@/models/Vendor";
@@ -23,6 +27,9 @@ type VendorListTableProps = {
   onSort: (column: string) => void;
   pagination: ApiPagination | undefined;
   onPageChange: (page: number) => void;
+  limit: number;
+  limitOptions: readonly number[];
+  onLimitChange: (limit: number) => void;
   canView: boolean;
   canCreate: boolean;
   canUpdate: boolean;
@@ -62,6 +69,9 @@ export function VendorListTable({
   onSort,
   pagination,
   onPageChange,
+  limit,
+  limitOptions,
+  onLimitChange,
   canView,
   canCreate,
   canUpdate,
@@ -117,21 +127,14 @@ export function VendorListTable({
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950/40">
-        <div className="border-b border-zinc-200/60 bg-zinc-50/80 px-4 py-2 dark:border-zinc-800 dark:bg-zinc-900/50">
-          <span className="text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
-            {title}
-          </span>
-          {pagination ? (
-            <span className="ml-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-              Page {pagination.page} of {pagination.last_page} · {pagination.total}{" "}
-              total
-            </span>
-          ) : (
-            <span className="ml-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-              {vendors.length} row{vendors.length === 1 ? "" : "s"}
-            </span>
-          )}
-        </div>
+        <TableListHeaderControls
+          title={title}
+          pagination={pagination}
+          rowCount={vendors.length}
+          limit={limit}
+          limitOptions={limitOptions}
+          onLimitChange={onLimitChange}
+        />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[44rem] border-collapse text-left text-xs">
             <thead>
@@ -242,29 +245,10 @@ export function VendorListTable({
         </div>
       </div>
 
-      {pagination && pagination.last_page > 1 ? (
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            disabled={pagination.page <= 1}
-            onClick={() => onPageChange(pagination.page - 1)}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Page {pagination.page} / {pagination.last_page}
-          </span>
-          <button
-            type="button"
-            disabled={pagination.page >= pagination.last_page}
-            onClick={() => onPageChange(pagination.page + 1)}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900"
-          >
-            Next
-          </button>
-        </div>
-      ) : null}
+      <TablePaginationControls
+        pagination={pagination}
+        onPageChange={onPageChange}
+      />
 
       <details className="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/80">
         <summary className="cursor-pointer px-4 py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">

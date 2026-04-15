@@ -57,7 +57,7 @@ function parseAmount(amount: number | null | undefined): number {
 export type DisplayCurrencyContextValue = {
   /** Raw selection from storage / user (empty = “Select currency”). */
   currencyCode: string;
-  /** Effective ISO code for conversion & formatting: selection, else `defaultCurrencyCode` when not user-locked. */
+  /** Same as {@link currencyCode} — only set when the user picked a display currency (no fallback). */
   displayTargetCode: string;
   /** Default used when inferring source amounts: `defaultCurrencyCode` → base API → USD. */
   computedDefault: string;
@@ -153,14 +153,10 @@ export function DisplayCurrencyProvider({
     writeStorage(STORAGE_KEY, "");
   }, []);
 
-  const displayTargetCode = useMemo(() => {
-    const selected = normalizeCode(currencyCode);
-    if (selected) return selected;
-    if (!touched && defaultCurrencyCode) {
-      return normalizeCode(defaultCurrencyCode);
-    }
-    return "";
-  }, [currencyCode, touched, defaultCurrencyCode]);
+  const displayTargetCode = useMemo(
+    () => normalizeCode(currencyCode),
+    [currencyCode],
+  );
 
   const options = useMemo(() => {
     const currencyOpts = activeCurrencies
@@ -168,13 +164,13 @@ export function DisplayCurrencyProvider({
         const code = normalizeCode(c.code);
         return {
           value: code,
-          label: `${code} — ${c.name ?? ""}`.trim(),
+          label: `${code} - ${c.name ?? ""}`.trim(),
         };
       })
       .filter((o) => o.value);
 
     const merged: Array<{ value: string; label: string }> = [
-      { value: "", label: "Select currency" },
+      { value: "", label: "Select Currency" },
       ...currencyOpts,
     ];
 
@@ -185,7 +181,6 @@ export function DisplayCurrencyProvider({
     };
     ensure(computedDefault);
     ensure(currencyCode);
-    ensure(displayTargetCode);
 
     const seen = new Set<string>();
     return merged.filter((opt) => {
@@ -193,7 +188,7 @@ export function DisplayCurrencyProvider({
       seen.add(opt.value);
       return true;
     });
-  }, [activeCurrencies, computedDefault, currencyCode, displayTargetCode]);
+  }, [activeCurrencies, computedDefault, currencyCode]);
 
   const convertAmount = useCallback(
     (
@@ -201,18 +196,18 @@ export function DisplayCurrencyProvider({
       fromCurrencyCode?: string | null,
     ): number => {
       const numeric = parseAmount(amount);
-      if (!displayTargetCode) {
+      const to = normalizeCode(currencyCode);
+      if (!to) {
         return numeric;
       }
       const from = normalizeCode(fromCurrencyCode || computedDefault) || "USD";
-      const to = displayTargetCode;
       if (!numeric || from === to) return numeric;
 
       const fromRate = currencyMap.get(from)?.exchange_rate ?? 1;
       const toRate = currencyMap.get(to)?.exchange_rate ?? 1;
       return convertCurrency(numeric, fromRate, toRate);
     },
-    [currencyMap, displayTargetCode, computedDefault],
+    [currencyMap, currencyCode, computedDefault],
   );
 
   const formatInCurrency = useCallback(
@@ -221,25 +216,26 @@ export function DisplayCurrencyProvider({
       fromCurrencyCode?: string | null,
     ): string => {
       const n = parseAmount(amount);
-      if (!displayTargetCode) {
+      const to = normalizeCode(currencyCode);
+      if (!to) {
         const source =
           normalizeCode(fromCurrencyCode || computedDefault) || "USD";
         return formatCurrency(n, source);
       }
       return formatCurrency(
         convertAmount(amount, fromCurrencyCode),
-        displayTargetCode,
+        to,
       );
     },
-    [convertAmount, displayTargetCode, computedDefault],
+    [convertAmount, currencyCode, computedDefault],
   );
 
   const formatDisplay = useCallback(
     (amount: number | null | undefined) => {
-      const code = displayTargetCode || computedDefault;
+      const code = normalizeCode(currencyCode) || computedDefault;
       return formatCurrency(parseAmount(amount), code);
     },
-    [displayTargetCode, computedDefault],
+    [currencyCode, computedDefault],
   );
 
   const isCurrencyDataLoading = activeQuery.isLoading || baseQuery.isLoading;

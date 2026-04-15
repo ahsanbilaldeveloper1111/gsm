@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useDisplayCurrency } from "@/contexts/currency-display-context";
+import { useDashboardAnalyticsCurrency } from "@/contexts/dashboard-analytics-currency-context";
 import {
   asArray,
   coerceAnalyticsRowList,
@@ -286,14 +287,18 @@ type SectionProps = {
   byMonthsPayload: unknown;
 };
 
+/** Must render under {@link DashboardAnalyticsCurrencyProvider}. */
 export function DashboardMoreAnalyticsSection({
   profitLossPayload,
   recentActivityPayload,
   productsSpentPayload,
   byMonthsPayload,
 }: SectionProps) {
-  const { formatInCurrency, computedDefault } = useDisplayCurrency();
-  const fmtMoney = (n: number) => formatInCurrency(n, computedDefault);
+  const { formatAnalyticsAmount } = useDashboardAnalyticsCurrency();
+  const { computedDefault, currencyCode } = useDisplayCurrency();
+  const fmtMoney = (n: number) => formatAnalyticsAmount(n);
+  const chartCurrencyCode =
+    currencyCode.trim() !== "" ? currencyCode : computedDefault;
 
   const pl = unwrapApiSuccessData<ProfitLossSummary>(profitLossPayload);
   const activity = unwrapApiSuccessData<RecentActivitySummary>(
@@ -418,7 +423,7 @@ export function DashboardMoreAnalyticsSection({
               <>
                 <ByMonthAxisChart
                   rows={byMonthRows.slice(0, 12)}
-                  currencyCode={computedDefault}
+                  currencyCode={chartCurrencyCode}
                 />
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400">
                   {byMonthRows.slice(0, 12).map((row, i) => (

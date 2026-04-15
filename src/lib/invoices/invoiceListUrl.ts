@@ -16,7 +16,6 @@ export type InvoiceListUrlState = {
   dir: "asc" | "desc";
   payment_status: string;
   crm_company_not_null: boolean;
-  display_currency: string;
 };
 
 export const defaultInvoiceListUrlState = (): InvoiceListUrlState => ({
@@ -33,7 +32,6 @@ export const defaultInvoiceListUrlState = (): InvoiceListUrlState => ({
   dir: "desc",
   payment_status: "",
   crm_company_not_null: false,
-  display_currency: "",
 });
 
 export function parseInvoiceListSearchParams(
@@ -59,7 +57,6 @@ export function parseInvoiceListSearchParams(
     dir,
     payment_status: sp.get("payment_status") ?? "",
     crm_company_not_null: sp.get("crm_company_not_null") === "1",
-    display_currency: sp.get("currency") ?? "",
   };
 }
 
@@ -81,7 +78,6 @@ export function buildInvoiceListSearchParams(
   if (s.date_to) q.set("date_to", s.date_to);
   if (s.payment_status.trim()) q.set("payment_status", s.payment_status.trim());
   if (s.crm_company_not_null) q.set("crm_company_not_null", "1");
-  if (s.display_currency.trim()) q.set("currency", s.display_currency.trim().toUpperCase());
   q.set("column", s.column);
   q.set("dir", s.dir);
   return q;

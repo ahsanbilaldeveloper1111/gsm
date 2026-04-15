@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { DeleteConfirmationDialog } from "@/components/crud/DeleteConfirmationDialog";
+import { CollapsibleFilterPanel } from "@/components/crud/ListUiControls";
 import { CreateUpdateVendorModal } from "@/components/vendors/CreateUpdateVendorModal";
 import { VendorListTable } from "@/components/vendors/VendorListTable";
 import { ViewVendorModal } from "@/components/vendors/ViewVendorModal";
@@ -102,6 +103,7 @@ export function VendorCrudView() {
   /** Remounts create/update modal so create mode starts clean without setState-in-effect. */
   const [formModalKey, setFormModalKey] = useState(0);
   const [deleteId, setDeleteId] = useState<number | string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const deleteItemLabel = useMemo(
     () =>
@@ -167,10 +169,11 @@ export function VendorCrudView() {
 
   return (
     <>
-      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white/60 p-4 dark:border-zinc-800/80 dark:bg-zinc-950/40">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          List filters — GET /vendors
-        </p>
+      <CollapsibleFilterPanel
+        title="List filters — GET /vendors"
+        open={showFilters}
+        onToggle={() => setShowFilters((v) => !v)}
+      >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <div className="sm:col-span-2">
             <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
@@ -224,30 +227,8 @@ export function VendorCrudView() {
               }
             />
           </div>
-          <div>
-            <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-              Page size
-            </label>
-            <select
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={listState.limit}
-              onChange={(e) =>
-                setListState((s) => ({
-                  ...s,
-                  limit: Number(e.target.value),
-                  page: 1,
-                }))
-              }
-            >
-              {LIMIT_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  {n} per page
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
-      </div>
+      </CollapsibleFilterPanel>
 
       <VendorListTable
         query={listQuery}
@@ -257,6 +238,9 @@ export function VendorCrudView() {
         onSort={handleSort}
         pagination={pagination}
         onPageChange={(page) => setListState((s) => ({ ...s, page }))}
+        limit={listState.limit}
+        limitOptions={LIMIT_OPTIONS}
+        onLimitChange={(limit) => setListState((s) => ({ ...s, limit, page: 1 }))}
         canView={allowView}
         canCreate={allowCreate}
         canUpdate={allowUpdate}

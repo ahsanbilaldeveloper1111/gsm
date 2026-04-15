@@ -6,6 +6,7 @@ import { DeleteConfirmationDialog } from "@/components/crud/DeleteConfirmationDi
 import { CreateUpdateInvoiceModal } from "@/components/invoices/CreateUpdateInvoiceModal";
 import { InvoiceDetailModal } from "@/components/invoices/InvoiceDetailModal";
 import { InvoiceListTable } from "@/components/invoices/InvoiceListTable";
+import { CollapsibleFilterPanel } from "@/components/crud/ListUiControls";
 import { CrmCustomerSearchableDropdown } from "@/components/ui/CrmCustomerSearchableDropdown";
 import { TenantSearchableDropdown } from "@/components/ui/TenantSearchableDropdown";
 import { useCrmCompanyNameMap } from "@/hooks/crm/useCrmCompanyNameMap";
@@ -13,7 +14,6 @@ import { useInvoiceMutations } from "@/hooks/invoices/useInvoiceMutations";
 import { useInvoices } from "@/hooks/invoices/useInvoices";
 import { usePermissions } from "@/hooks/permissions/usePermissions";
 import { useVendors } from "@/hooks/vendors/useVendors";
-import { useActiveCurrencies } from "@/hooks/currencies/useActiveCurrencies";
 import { extractListRows } from "@/lib/api/extractApiData";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import {
@@ -151,7 +151,6 @@ export function InvoiceCrudView() {
     listState.dir,
     listState.payment_status,
     listState.crm_company_not_null,
-    listState.display_currency,
     debouncedSearch,
     pathname,
     router,
@@ -174,14 +173,6 @@ export function InvoiceCrudView() {
   const tenantDisplayNameById = useMainAppResellerNameMap();
   const crmCompanyNameById = useCrmCompanyNameMap();
 
-
-  const currenciesQuery = useActiveCurrencies();
-  const currencyOptions = useMemo(() => {
-    const raw = currenciesQuery.data;
-    const d = raw?.data;
-    const list = Array.isArray(d) ? d : [];
-    return list.map((c: { code: string }) => c.code).filter(Boolean);
-  }, [currenciesQuery.data]);
 
   const listParams = useMemo((): IndexInvoiceParams => {
     const vendorParsed = listState.vendor_id.trim()
@@ -233,6 +224,7 @@ export function InvoiceCrudView() {
   const [editId, setEditId] = useState<number | string | null>(null);
   const [invoiceFormOpen, setInvoiceFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const deleteItemLabel = useMemo(
     () =>
@@ -269,11 +261,12 @@ export function InvoiceCrudView() {
 
   return (
     <>
-      <div className="mb-4 space-y-3 rounded-2xl border border-zinc-200/80 bg-white/60 p-4 dark:border-zinc-800/80 dark:bg-zinc-950/40">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          Filters — synced to the URL for sharing/bookmarks. Search is debounced
-          before calling the API.
-        </p>
+      <CollapsibleFilterPanel
+        title="Filters — synced to URL"
+        subtitle="Search is debounced before calling the API."
+        open={showFilters}
+        onToggle={() => setShowFilters((v) => !v)}
+      >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -372,28 +365,6 @@ export function InvoiceCrudView() {
           ) : null}
           <div>
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Display currency
-            </label>
-            <select
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={listState.display_currency}
-              onChange={(ev) =>
-                setListState((s) => ({
-                  ...s,
-                  display_currency: ev.target.value,
-                }))
-              }
-            >
-              <option value="">Invoice currency</option>
-              {currencyOptions.map((code) => (
-                <option key={code} value={code}>
-                  {code}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Status
             </label>
             <select
@@ -431,28 +402,6 @@ export function InvoiceCrudView() {
               }
               placeholder="Optional"
             />
-          </div>
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Page size
-            </label>
-            <select
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={listState.limit}
-              onChange={(ev) =>
-                setListState((s) => ({
-                  ...s,
-                  page: 1,
-                  limit: Number(ev.target.value),
-                }))
-              }
-            >
-              {LIST_LIMIT_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
           </div>
           <div>
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -571,19 +520,21 @@ export function InvoiceCrudView() {
             </label>
           </div>
         </div>
-      </div>
+      </CollapsibleFilterPanel>
 
       <InvoiceListSummaryBar response={listQuery.data} />
 
       <InvoiceListTable
         query={listQuery}
         title="Invoices"
-        displayCurrencyCode={listState.display_currency}
         isSuperAdmin={isSuperAdmin}
         tenantDisplayNameById={tenantDisplayNameById}
         crmCompanyNameById={crmCompanyNameById}
         pagination={pagination}
         onPageChange={(page) => setListState((s) => ({ ...s, page }))}
+        limit={listState.limit}
+        limitOptions={LIST_LIMIT_OPTIONS}
+        onLimitChange={(limit) => setListState((s) => ({ ...s, page: 1, limit }))}
         onCreate={openCreate}
         onView={(id) => setDetailId(id)}
         onEdit={(id) => {
