@@ -40,6 +40,16 @@ export * from "@/hooks/expenses/useExpenses";
 
 export * from "@/hooks/inventory/useInventory";
 export * from "@/hooks/inventory/useInventoryEndpoints";
+export * from "@/hooks/gsm/useGsm";
+export * from "@/hooks/ports/usePorts";
+export * from "@/hooks/notifications/useNotifications";
+export * from "@/hooks/conversations/useConversations";
+export * from "@/hooks/ussd/useUssd";
+export * from "@/hooks/sims/useSims";
+export * from "@/hooks/outbox/useOutbox";
+export * from "@/hooks/inbox/useInbox";
+export * from "@/hooks/gsm-assignment/useGsmAssignments";
+export * from "@/hooks/cdr/useCdr";
 
 export * from "@/hooks/invoices/useInvoice";
 export * from "@/hooks/invoices/useInvoiceDetails";

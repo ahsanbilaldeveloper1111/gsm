@@ -1,7 +1,7 @@
 "use client";
 
 import { ModelListBody } from "@/components/views/ModelListBody";
-import { useAuditLogs } from "@/hooks/audit-logs/useAuditLogs";
+import { AuditLogsView as AuditLogsTableView } from "@/components/views/AuditLogsView";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useCrmCompanies } from "@/hooks/crm/useCrmCompanies";
 import { CurrencyCrudView } from "@/components/views/CurrencyCrudView";
@@ -89,16 +89,7 @@ export function CrmView() {
 }
 
 export function AuditLogsView() {
-  const q = useAuditLogs();
-  return (
-    <ModelListBody
-      query={q}
-      title="Audit logs"
-      viewable
-      detailModalTitle="Audit log"
-      detailModalSubtitle="Full row from the audit log list (immutable activity record)."
-    />
-  );
+  return <AuditLogsTableView />;
 }
 
 export function InventoryView() {

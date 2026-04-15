@@ -19,7 +19,7 @@ import { PermissionAction, type PermissionCreateData } from "@/models/Permission
 
 /** Initial login form state (matches `LoginPayload` / auth API). */
 export function loginFormDefaults(): LoginPayload {
-  return { samaccountname: "", password: "" };
+  return { email: "", password: "" };
 }
 
 /** Empty create-customer payload; fill before submit. */

@@ -14,7 +14,7 @@ export function createApiRoutes(base: string) {
       getRefreshToken: () => `${b}/get-refresh-token`,
     },
     auth: {
-      login: () => `${b}/login`,
+      login: () => `${b}/auth/login`,
       logout: () => `${b}/logout`,
       user: () => `${b}/user`,
       google2fa: ((g: string) => ({
@@ -113,6 +113,76 @@ export function createApiRoutes(base: string) {
         `${x}/${encodeURIComponent(String(tenantId))}/documents/${encodeURIComponent(String(documentId))}/download`,
     }))(`${b}/company`),
     dashboard: () => `${b}/dashboard`,
+    gsm: ((x: string) => ({
+      index: () => `${x}`,
+      store: () => `${x}`,
+      show: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+      update: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+      destroy: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+      assignCompany: (gsmId: number | string) =>
+        `${x}/${encodeURIComponent(String(gsmId))}/assign-company`,
+      clientProfile: () => `${b}/client_gsm_profile`,
+    }))(`${b}/gsm`),
+    ports: ((x: string) => ({
+      index: () => `${x}`,
+      show: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+      byCompany: (id: number | string) =>
+        `${x}/by-company/${encodeURIComponent(String(id))}`,
+      byGsm: (gsmId: number | string) =>
+        `${x}/gsm/${encodeURIComponent(String(gsmId))}`,
+      byGsmFiltered: (gsmId: number | string) =>
+        `${x}/gsm/${encodeURIComponent(String(gsmId))}/filtered`,
+      getById: (id: number | string) => `${x}/${encodeURIComponent(String(id))}/get`,
+      updateMobileNumber: (id: number | string) =>
+        `${x}/updateMobileNumber/${encodeURIComponent(String(id))}`,
+      delink: () => `${x}/delink`,
+      syncSimStatus: () => `${x}/syncSimStatus`,
+      assigned: () => `${x}/assigned`,
+      assignedRemove: () => `${x}/assigned/remove`,
+      syncPorts: () => `${x}/sync_ports`,
+      syncPortsMobileNumber: () => `${x}/sync_ports_mobile_number`,
+      assignPort: () => `${b}/port/assign-port`,
+    }))(`${b}/ports`),
+    notifications: ((x: string) => ({
+      index: () => `${x}`,
+      sendSms: () => `${x}/send-sms`,
+      statistics: () => `${x}/statistics`,
+      byMobile: () => `${x}/by-mobile`,
+      show: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+    }))(`${b}/notifications`),
+    conversations: ((x: string) => ({
+      index: () => `${x}`,
+      show: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+      byMobile: () => `${x}/by-mobile`,
+      updateStatus: (id: number | string) =>
+        `${x}/${encodeURIComponent(String(id))}/status`,
+      statistics: () => `${x}/statistics`,
+      destroy: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+    }))(`${b}/conversations`),
+    gsmAssignments: ((x: string) => ({
+      index: () => `${x}`,
+      store: () => `${x}`,
+      show: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+      update: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+      destroy: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+      delink: (id: number | string) =>
+        `${x}/${encodeURIComponent(String(id))}/delink`,
+    }))(`${b}/gsm_assignment`),
+    deviceProxy: {
+      sendSms: () => `${b}/send_sms`,
+      sendUssd: () => `${b}/send_ussd`,
+    },
+    ussd: () => `${b}/ussd`,
+    outbox: () => `${b}/outbox`,
+    inbox: () => `${b}/inbox`,
+    cdr: () => `${b}/cdr`,
+    sims: ((x: string) => ({
+      index: () => `${x}`,
+      store: () => `${x}`,
+      show: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+      update: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+      destroy: (id: number | string) => `${x}/${encodeURIComponent(String(id))}`,
+    }))(`${b}/sims`),
     analytics: ((x: string) => ({
       dashboardCounters: () => `${x}/dashboard-counters`,
       dashboardCharts: () => `${x}/dashboard-charts`,

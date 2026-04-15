@@ -172,6 +172,9 @@ export const queryKeys = {
     all: ["auditLogs"] as const,
     list: (params: Record<string, unknown> | null) =>
       [...queryKeys.auditLogs.all, "list", params] as const,
+    resourceTypes: () => [...queryKeys.auditLogs.all, "resourceTypes"] as const,
+    detail: (id: number | string | null) =>
+      [...queryKeys.auditLogs.all, "detail", id] as const,
   },
   email: {
     all: ["email"] as const,
@@ -288,6 +291,70 @@ export const queryKeys = {
       detail: (id: number | string | null) =>
         [...queryKeys.inventory.all, "items", id] as const,
     },
+  },
+  gsm: {
+    all: ["gsm"] as const,
+    list: (params: Record<string, unknown> | null) =>
+      [...queryKeys.gsm.all, "list", params] as const,
+    clientProfile: (params: Record<string, unknown> | null) =>
+      [...queryKeys.gsm.all, "clientProfile", params] as const,
+  },
+  gsmAssignments: {
+    all: ["gsmAssignments"] as const,
+    list: (params: Record<string, unknown> | null) =>
+      [...queryKeys.gsmAssignments.all, "list", params] as const,
+    detail: (id: number | string | null) =>
+      [...queryKeys.gsmAssignments.all, "detail", id] as const,
+  },
+  ports: {
+    all: ["ports"] as const,
+    list: (params: Record<string, unknown> | null) =>
+      [...queryKeys.ports.all, "list", params] as const,
+    byGsm: (gsmId: number | string | null) =>
+      [...queryKeys.ports.all, "byGsm", gsmId] as const,
+  },
+  notifications: {
+    all: ["notifications"] as const,
+    list: (params: Record<string, unknown> | null) =>
+      [...queryKeys.notifications.all, "list", params] as const,
+    statistics: () => [...queryKeys.notifications.all, "statistics"] as const,
+    byMobile: (params: Record<string, unknown> | null) =>
+      [...queryKeys.notifications.all, "byMobile", params] as const,
+    detail: (id: number | string | null) =>
+      [...queryKeys.notifications.all, "detail", id] as const,
+  },
+  conversations: {
+    all: ["conversations"] as const,
+    list: (params: Record<string, unknown> | null) =>
+      [...queryKeys.conversations.all, "list", params] as const,
+    statistics: () => [...queryKeys.conversations.all, "statistics"] as const,
+  },
+  ussd: {
+    all: ["ussd"] as const,
+    list: (params: Record<string, unknown> | null) =>
+      [...queryKeys.ussd.all, "list", params] as const,
+  },
+  sims: {
+    all: ["sims"] as const,
+    list: (params: Record<string, unknown> | null) =>
+      [...queryKeys.sims.all, "list", params] as const,
+    detail: (id: number | string | null) =>
+      [...queryKeys.sims.all, "detail", id] as const,
+  },
+  outbox: {
+    all: ["outbox"] as const,
+    list: (params: Record<string, unknown> | null) =>
+      [...queryKeys.outbox.all, "list", params] as const,
+  },
+  inbox: {
+    all: ["inbox"] as const,
+    list: (params: Record<string, unknown> | null) =>
+      [...queryKeys.inbox.all, "list", params] as const,
+  },
+  cdr: {
+    all: ["cdr"] as const,
+    list: (params: Record<string, unknown> | null) =>
+      [...queryKeys.cdr.all, "list", params] as const,
   },
   public: {
     all: ["public"] as const,

@@ -19,48 +19,56 @@ export const navigationGroups: NavGroup[] = [
     items: [{ label: "Dashboard", href: appPaths.dashboard }],
   },
   {
-    title: "Organizations",
-    items: [
-      { label: "Vendors", href: appPaths.vendors },
-      { label: "Company", href: appPaths.company },
-      { label: "Customers", href: appPaths.customers },
-    ],
+    title: "Audit logs",
+    items: [{ label: "Audit logs", href: appPaths.auditLogs }],
   },
   {
-    title: "Finance",
-    items: [
-      { label: "Invoices", href: appPaths.invoices },
-      { label: "Payments", href: appPaths.payments },
-      { label: "Expenses", href: appPaths.expenses },
-      { label: "Expense categories", href: appPaths.expenseCategories },
-      {
-        label: "Statement of account",
-        href: appPaths.statementOfAccount,
-        description: "Activity, balances & PDF",
-      },
-      { label: "Currencies", href: appPaths.currencies },
-    ],
+    title: "GSM",
+    items: [{ label: "GSM", href: appPaths.gsm }],
   },
   {
-    title: "Catalog",
-    items: [
-      { label: "Products", href: appPaths.products },
-      { label: "Product categories", href: appPaths.productCategories },
-    ],
+    title: "GSM companies",
+    items: [{ label: "GSM companies", href: appPaths.gsmCompanies }],
   },
   {
-    title: "People & access",
-    items: [
-      { label: "Users", href: appPaths.users },
-      { label: "Ranks", href: appPaths.ranks },
-      { label: "Audit logs", href: appPaths.auditLogs },
-    ],
+    title: "Client GSM profiling",
+    items: [{ label: "Client GSM profiling", href: appPaths.clientGsmProfiling }],
   },
   {
-    title: "Operations",
-    items: [
-      { label: "Inventory", href: appPaths.inventory },
-      { label: "Stripe", href: appPaths.stripe },
-    ],
+    title: "Ports",
+    items: [{ label: "Ports", href: appPaths.ports }],
   },
+  {
+    title: "Notifications",
+    items: [{ label: "Notifications", href: appPaths.notifications }],
+  },
+  {
+    title: "Conversations",
+    items: [{ label: "Conversations", href: appPaths.conversations }],
+  },
+  {
+    title: "USSD",
+    items: [{ label: "USSD", href: appPaths.ussd }],
+  },
+  {
+    title: "Sync ports",
+    items: [{ label: "Sync ports", href: appPaths.syncPorts }],
+  },
+  {
+    title: "SIMs",  
+    items: [{ label: "SIMs", href: appPaths.sims }],
+  },
+  {
+    title: "Outbox",
+    items: [{ label: "Outbox", href: appPaths.outbox }],
+  },
+  {
+    title: "Inbox",
+    items: [{ label: "Inbox", href: appPaths.inbox }],
+  },
+  {
+    title: "CDR",
+    items: [{ label: "CDR", href: appPaths.cdr }],
+  },
+  
 ];

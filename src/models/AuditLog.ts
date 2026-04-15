@@ -52,9 +52,10 @@ export interface AuditLog {
 }
 
 export interface IndexAuditLogParams extends PaginationParams {
+  search?: string;
   user_id?: number;
   company_id?: number;
-  resource_type?: AuditLogResourceType;
+  resource_type?: AuditLogResourceType | string;
   date_from?: string;
   date_to?: string;
   action?: string;
@@ -68,4 +69,17 @@ export interface AuditLogSummary {
   created: number;
   updated: number;
   deleted: number;
+}
+
+export interface AuditLogListEnvelope {
+  code?: number;
+  message?: string;
+  data?: {
+    current_page?: number;
+    data?: AuditLog[];
+    last_page?: number;
+    per_page?: number;
+    total?: number;
+  };
+  summary?: AuditLogSummary;
 }

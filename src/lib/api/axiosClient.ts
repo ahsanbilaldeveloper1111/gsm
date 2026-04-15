@@ -1,9 +1,4 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
-import {
-  clearSessionIfExpired,
-  clearStoredToken,
-  getStoredToken,
-} from "@/lib/auth/tokenStore";
 import { getBillingBackendHttpsAgent } from "@/lib/api/nodeTlsAgent";
 import {
   BILLING_API_PROXY_BASE,
@@ -97,16 +92,6 @@ function mergeJsonBody(config: InternalAxiosRequestConfig): void {
 
 function applyRequestInterceptors(client: AxiosInstance): void {
   client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-    if (typeof window !== "undefined" && clearSessionIfExpired()) {
-      if (
-        window.location.pathname !== appPaths.login &&
-        !redirectingToLogin
-      ) {
-        redirectingToLogin = true;
-        window.location.replace(appPaths.login);
-      }
-      return Promise.reject(new axios.Cancel("Session expired"));
-    }
     if (typeof window !== "undefined") {
       // Same-origin proxies: `BILLING_BACKEND_PROXY_BASE` vs `BILLING_API_PROXY_BASE` (legacy `/api/*`).
       // Axios merges baseURL + url — a path under `BILLING_API_PROXY_BASE` must NOT use `BILLING_BACKEND_PROXY_BASE`
@@ -177,10 +162,6 @@ function applyRequestInterceptors(client: AxiosInstance): void {
       ...(addSuperUserToQuery ? { [SUPER_Q]: SUPER_V } : {}),
     };
 
-    const token = getStoredToken();
-    if (token) {
-      config.headers.set("Authorization", `Bearer ${token}`);
-    }
     if (!config.headers.get("Accept") && !config.headers.get("accept")) {
       config.headers.set("Accept", "application/json");
     }
@@ -242,7 +223,6 @@ function applyResponseInterceptor(client: AxiosInstance): void {
       if (shouldSkipAuthRedirectToLogin(error.config)) return Promise.reject(error);
       if (redirectingToLogin) return Promise.reject(error);
       redirectingToLogin = true;
-      clearStoredToken();
       window.location.replace(appPaths.login);
       return Promise.reject(error);
     },
@@ -254,11 +234,10 @@ let _client: AxiosInstance | null = null;
 /**
  * Singleton Axios instance for the billing backend `/api`:
  * - `is_super_user=1` on the query for GETs; on POST/PUT/PATCH with a body, only in JSON/form (see interceptor)
- * - `Authorization: Bearer <jwt>` when a token is stored
+ * - JWT is sent by proxy using HTTP-only cookie, not localStorage token headers
  * - `withCredentials: true`, `withXSRFToken: true`, cookie/header names — Sanctum CSRF (see `applyXsrfHeaderFromCookie`; call `fetchSanctumCsrfCookie` before login/logout)
  * - Server-side only: `API_TLS_INSECURE=1` uses `getBillingBackendHttpsAgent()` (same as proxy route handlers)
- * - Browser: **401** or **403** → clear token + `location.replace('/login')`, except failed **login** POST (`/login`).
- * - Client: if login `expires_in` (minutes → stored as absolute expiry) has passed, clear session + redirect to `/login` before sending.
+ * - Browser: **401** or **403** → `location.replace('/login')`, except failed **login** POST (`/login`).
  */
 export function getApiClient(): AxiosInstance {
   if (!_client) {

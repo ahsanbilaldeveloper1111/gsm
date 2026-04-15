@@ -5,11 +5,6 @@ import { postJsonWithXhr } from "@/lib/auth/postJsonWithXhr";
 import { getXsrfHeadersForFetch } from "@/lib/auth/xsrfBrowser";
 import { apiRoutes } from "@/lib/routes/apiRoutes";
 import {
-  clearStoredToken,
-  loginExpiresInMinutesToStorageSeconds,
-  setStoredToken,
-} from "@/lib/auth/tokenStore";
-import {
   BILLING_BACKEND_PROXY_BASE,
   getInternalNextOrigin,
 } from "@/lib/env";
@@ -17,7 +12,8 @@ import { User } from "@/models/User";
 import { fetchSanctumCsrfCookie } from "@/services/sanctum.service";
 
 export type LoginPayload = {
-  samaccountname: string;
+  samaccountname?: string;
+  email?: string;
   password: string;
 };
 
@@ -41,46 +37,6 @@ type LoginDataPayload = {
   expires_in?: number;
   requires_google_auth_verification?: boolean;
 };
-
-function normalizeBearerValue(jwt: string): string {
-  const t = jwt.trim();
-  return t.replace(/^Bearer\s+/i, "").trim();
-}
-
-/**
- * Reads `access_token` / `token` from Sanctum envelope or flat JSON.
- * Tolerant of `success: 1` / `"true"` so we never skip persisting the JWT.
- */
-/** Returns seconds until expiry for `setStoredToken` (API sends minutes). */
-function extractExpiresInFromLoginJson(raw: unknown): number | null {
-  if (!raw || typeof raw !== "object") return null;
-  const r = raw as Record<string, unknown>;
-  if (r.data && typeof r.data === "object" && !Array.isArray(r.data)) {
-    const d = r.data as Record<string, unknown>;
-    if ("expires_in" in d)
-      return loginExpiresInMinutesToStorageSeconds(d.expires_in);
-  }
-  if ("expires_in" in r)
-    return loginExpiresInMinutesToStorageSeconds(r.expires_in);
-  return null;
-}
-
-function extractAccessTokenFromLoginJson(raw: unknown): string | null {
-  if (!raw || typeof raw !== "object") return null;
-  const r = raw as Record<string, unknown>;
-  if (r.data && typeof r.data === "object" && !Array.isArray(r.data)) {
-    const d = r.data as Record<string, unknown>;
-    const jwt = d.access_token ?? d.token;
-    if (typeof jwt === "string" && jwt.length > 0) {
-      return normalizeBearerValue(jwt);
-    }
-  }
-  const flat = r.access_token ?? r.token;
-  if (typeof flat === "string" && flat.length > 0) {
-    return normalizeBearerValue(flat);
-  }
-  return null;
-}
 
 function isApiSuccessTruthy(success: unknown): boolean {
   return (
@@ -110,23 +66,24 @@ async function logLoginFlowServer(
  */
 export async function loginRequest(body: LoginPayload): Promise<LoginResult> {
   await fetchSanctumCsrfCookie();
-  const samaccountname = String(body.samaccountname ?? "").trim();
+  const identifier = String(body.email ?? body.samaccountname ?? "").trim();
   const password = String(body.password ?? "");
-  if (!samaccountname || !password) {
+  if (!identifier || !password) {
     await logLoginFlowServer("validation_missing_credentials", {});
-    throw new Error("Username and password are required.");
+    throw new Error("Email and password are required.");
   }
   const path = apiRoutes.auth.login();
   const origin =
     typeof window !== "undefined" ? "" : getInternalNextOrigin();
   const url = `${origin}${BILLING_BACKEND_PROXY_BASE}${path}`;
   const payload = JSON.stringify({
-    samaccountname,
+    email: identifier,
+    samaccountname: identifier,
     password,
     is_super_user: 1,
   });
   if (
-    !payload.includes('"samaccountname"') ||
+    !payload.includes('"email"') ||
     !payload.includes('"password"')
   ) {
     await logLoginFlowServer("validation_serialization_fields", {
@@ -238,12 +195,6 @@ export async function loginRequest(body: LoginPayload): Promise<LoginResult> {
     );
   }
 
-  const persisted = extractAccessTokenFromLoginJson(raw);
-  const expiresIn = extractExpiresInFromLoginJson(raw);
-  if (persisted) {
-    setStoredToken(persisted, { expiresInSeconds: expiresIn ?? undefined });
-  }
-
   if (
     raw &&
     typeof raw === "object" &&
@@ -294,7 +245,7 @@ export async function logoutRequest(): Promise<void> {
     });
     throw e;
   } finally {
-    clearStoredToken();
+    // JWT cookie is cleared in the proxy route when logout succeeds.
   }
 }
 
@@ -334,28 +285,8 @@ export async function fetchCurrentUserApiWrapped(): Promise<
 }
 
 function maybeStoreTokenFromEnvelope(data: unknown): void {
-  if (
-    data &&
-    typeof data === "object" &&
-    "success" in data &&
-    (data as { success?: boolean }).success === true &&
-    "data" in data
-  ) {
-    const inner = (
-      data as ApiSuccessResponse<{
-        token?: string;
-        access_token?: string;
-        expires_in?: unknown;
-      }>
-    ).data;
-    const jwt = inner?.access_token ?? inner?.token;
-    if (jwt) {
-      setStoredToken(jwt, {
-        expiresInSeconds:
-          loginExpiresInMinutesToStorageSeconds(inner?.expires_in) ?? undefined,
-      });
-    }
-  }
+  // JWT persistence is handled by the proxy via HTTP-only cookies.
+  void data;
 }
 
 export async function google2faVerify(body: unknown): Promise<unknown> {

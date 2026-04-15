@@ -9,6 +9,9 @@ import {
   logProxyUpstreamFailure,
 } from "@/lib/httpRequestFileLogger";
 
+const JWT_COOKIE_NAME = process.env.GSM_JWT_COOKIE_NAME || "gsm_jwt";
+const JWT_COOKIE_TTL_SECONDS = 60 * 60 * 24;
+
 /**
  * When the billing backend returns 30x with `Location: https://upstream-host/api/...`, the browser would follow
  * that URL and leave the Next proxy — TLS is then enforced in the browser (`ERR_CERT_*`), and Node’s
@@ -156,8 +159,15 @@ function buildUpstreamHeaders(
   forwardHeaders: Record<string, string>,
   incomingContentType: string,
   bodyBuffer: Buffer | undefined,
+  jwtFromCookie: string | undefined,
 ): Record<string, string> {
   const headers: Record<string, string> = { ...forwardHeaders };
+  const hasAuth = Object.keys(headers).some(
+    (k) => k.toLowerCase() === "authorization",
+  );
+  if (!hasAuth && jwtFromCookie) {
+    headers.Authorization = `Bearer ${jwtFromCookie}`;
+  }
   if (!bodyBuffer?.length) return headers;
   removeHeaderCaseInsensitive(headers, "content-type");
   removeHeaderCaseInsensitive(headers, "content-length");
@@ -278,6 +288,43 @@ function buildNextResponse(
   return new NextResponse(body, { status: ax.status, headers: resHeaders });
 }
 
+function parseJsonFromArrayBuffer(data: ArrayBuffer | undefined): unknown {
+  if (!data || data.byteLength === 0) return null;
+  try {
+    const text = Buffer.from(data).toString("utf8");
+    return text ? JSON.parse(text) : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractJwtFromPayload(payload: unknown): { token?: string; ttl?: number } {
+  if (!payload || typeof payload !== "object") return {};
+  const o = payload as Record<string, unknown>;
+  const data =
+    o.data && typeof o.data === "object" && !Array.isArray(o.data)
+      ? (o.data as Record<string, unknown>)
+      : o;
+  const raw = data.access_token ?? data.token;
+  const token = typeof raw === "string" ? raw.replace(/^Bearer\s+/i, "").trim() : "";
+  if (!token) return {};
+  const expiresInRaw = data.expires_in;
+  const n =
+    typeof expiresInRaw === "number"
+      ? expiresInRaw
+      : typeof expiresInRaw === "string"
+        ? Number.parseInt(expiresInRaw, 10)
+        : NaN;
+  const ttl = Number.isFinite(n) && n > 0 ? n * 60 : JWT_COOKIE_TTL_SECONDS;
+  return { token, ttl };
+}
+
+function shouldClearJwtCookie(url: string): boolean {
+  const p = safeUrlPathname(url);
+  if (!p) return false;
+  return p === "/logout" || p.endsWith("/logout");
+}
+
 /**
  * Forwards the incoming request to a full upstream URL (used by billing backend proxy routes).
  * Uses the shared TLS agent when `API_TLS_INSECURE=1`.
@@ -318,6 +365,7 @@ export async function proxyRequestToUrl(
 
   const incomingContentType = req.headers.get("content-type") ?? "";
   const incomingContentLength = req.headers.get("content-length");
+  const jwtFromCookie = req.cookies.get(JWT_COOKIE_NAME)?.value;
 
   // Empty POST/PUT/PATCH: only synthesize `{}` when the client is *not* sending JSON. For
   // `application/json`, forwarding a fake `{}` makes the backend think credentials were omitted
@@ -388,6 +436,7 @@ export async function proxyRequestToUrl(
       forwardHeaders,
       incomingContentType,
       bodyBuffer,
+      jwtFromCookie,
     );
 
     let currentUrl = targetUrl;
@@ -461,7 +510,27 @@ export async function proxyRequestToUrl(
         httpError: res.status >= 400,
       });
     }
-    return buildNextResponse(res, rewrite);
+    const nextRes = buildNextResponse(res, rewrite);
+    const payload = parseJsonFromArrayBuffer(res.data);
+    const extracted = extractJwtFromPayload(payload);
+    if (extracted.token) {
+      nextRes.cookies.set(JWT_COOKIE_NAME, extracted.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: extracted.ttl ?? JWT_COOKIE_TTL_SECONDS,
+      });
+    } else if (shouldClearJwtCookie(currentUrl)) {
+      nextRes.cookies.set(JWT_COOKIE_NAME, "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 0,
+      });
+    }
+    return nextRes;
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     logProxyUpstreamFailure({

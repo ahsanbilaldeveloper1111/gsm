@@ -45,18 +45,19 @@ export default function LoginPage() {
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
           <div>
             <label
-              htmlFor="samaccountname"
+              htmlFor="email"
               className="block text-xs font-medium text-zinc-600 dark:text-zinc-300"
             >
-              Username
+              Email
             </label>
             <input
-              id="samaccountname"
-              name="samaccountname"
-              autoComplete="username"
-              value={values.samaccountname}
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={values.email ?? ""}
               onChange={(e) =>
-                setValues((v) => ({ ...v, samaccountname: e.target.value }))
+                setValues((v) => ({ ...v, email: e.target.value }))
               }
               className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500/0 transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
               required

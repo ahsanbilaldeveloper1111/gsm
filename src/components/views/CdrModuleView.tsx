@@ -1,0 +1,245 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
+import { useCdr } from "@/hooks/cdr/useCdr";
+import { useGsm } from "@/hooks/gsm/useGsm";
+import { usePortsByGsm } from "@/hooks/ports/usePorts";
+
+function formatDateTime(input?: string): string {
+  if (!input) return "-";
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return input;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `${dd}-${mm}-${yyyy} ${hh}:${mi}:${ss}`;
+}
+
+export function CdrModuleView() {
+  const [draft, setDraft] = useState({
+    gsm_id: "",
+    port_id: "",
+    source_number: "",
+    destination_number: "",
+    start_date: "",
+    answer_date: "",
+  });
+  const [filters, setFilters] = useState(draft);
+
+  const gsmQuery = useGsm();
+  const portsQuery = usePortsByGsm(draft.gsm_id || null);
+
+  const cdrParams = useMemo(
+    () => ({
+      gsm_id: filters.gsm_id || undefined,
+      port_id: filters.port_id || undefined,
+      source_number: filters.source_number || undefined,
+      destination_number: filters.destination_number || undefined,
+      start_date: filters.start_date || undefined,
+      answer_date: filters.answer_date || undefined,
+      draw: 1,
+      start: 0,
+      length: 100,
+    }),
+    [filters],
+  );
+  const cdrQuery = useCdr(cdrParams);
+
+  const gsmRows = gsmQuery.data?.rows ?? [];
+  const portRows = portsQuery.data?.rows ?? [];
+  const rows = cdrQuery.data?.rows ?? [];
+  const columns = useMemo(
+    () => [
+      { key: "ip_address", header: "IP Address", render: (row: Record<string, unknown>) => String(row.ip_address ?? "-") },
+      { key: "port_number", header: "Port #", render: (row: Record<string, unknown>) => String((row.port as Record<string, unknown> | undefined)?.port_number ?? "-") },
+      { key: "mobile_number", header: "Mobile Number", render: (row: Record<string, unknown>) => String((row.port as Record<string, unknown> | undefined)?.mobile_number ?? "-") },
+      { key: "start_date", header: "Start Date", render: (row: Record<string, unknown>) => String(row.start_date ?? "-") },
+      { key: "answer_date", header: "Answer Date", render: (row: Record<string, unknown>) => String(row.answer_date ?? "-") },
+      { key: "duration", header: "Duration", render: (row: Record<string, unknown>) => String(row.duration ?? "-") },
+      { key: "source_number", header: "Source Number", render: (row: Record<string, unknown>) => String(row.source_number ?? "-") },
+      { key: "destination_number", header: "Destination Number", render: (row: Record<string, unknown>) => String(row.number ?? row.destination_number ?? "-") },
+      { key: "direction", header: "Direction", render: (row: Record<string, unknown>) => String(row.direction ?? "-") },
+      { key: "ip", header: "IP", render: (row: Record<string, unknown>) => String(row.ip ?? "-") },
+      { key: "codec", header: "Codec", render: (row: Record<string, unknown>) => String(row.codec ?? "-") },
+      { key: "hangup", header: "Hangup", render: (row: Record<string, unknown>) => String(row.hangup ?? "-") },
+      { key: "gsm_code", header: "GSM Code", render: (row: Record<string, unknown>) => String(row.gsm_code ?? "-") },
+      { key: "bcch", header: "BCCH", render: (row: Record<string, unknown>) => String(row.bcch ?? "-") },
+      { key: "reason", header: "Reason", render: (row: Record<string, unknown>) => String(row.reason ?? "-") },
+      { key: "created_at", header: "DateTime", render: (row: Record<string, unknown>) => formatDateTime(String(row.created_at ?? "")) },
+    ],
+    [],
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
+        <SelectField
+          label="GSM"
+          value={draft.gsm_id}
+          onChange={(v) => setDraft((s) => ({ ...s, gsm_id: v, port_id: "" }))}
+          options={[{ value: "", label: "All" }].concat(
+            gsmRows.map((g, idx) => ({
+              value: String(g.id ?? ""),
+              label: String(g.name ?? `GSM ${idx + 1}`),
+            })),
+          )}
+        />
+        <SelectField
+          label="Select Port"
+          value={draft.port_id}
+          onChange={(v) => setDraft((s) => ({ ...s, port_id: v }))}
+          options={[{ value: "", label: "-- Select Port --" }].concat(
+            portRows.map((p, idx) => ({
+              value: String(p.id ?? ""),
+              label: `Port ${String(p.port_number ?? p.port ?? idx + 1)}`,
+            })),
+          )}
+        />
+        <TextField
+          label="Mobile Number"
+          value={draft.source_number}
+          onChange={(v) => setDraft((s) => ({ ...s, source_number: v }))}
+        />
+        <TextField
+          label="Destination Number"
+          value={draft.destination_number}
+          onChange={(v) => setDraft((s) => ({ ...s, destination_number: v }))}
+        />
+        <DateField
+          label="Start Date"
+          value={draft.start_date}
+          onChange={(v) => setDraft((s) => ({ ...s, start_date: v }))}
+        />
+        <DateField
+          label="Answer Date"
+          value={draft.answer_date}
+          onChange={(v) => setDraft((s) => ({ ...s, answer_date: v }))}
+        />
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            const empty = {
+              gsm_id: "",
+              port_id: "",
+              source_number: "",
+              destination_number: "",
+              start_date: "",
+              answer_date: "",
+            };
+            setDraft(empty);
+            setFilters(empty);
+          }}
+          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilters({ ...draft })}
+          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
+        >
+          Submit
+        </button>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/50">
+        <div className="border-b border-zinc-200 px-4 py-3 text-sm font-semibold dark:border-zinc-800">
+          Details
+        </div>
+        <PaginatedDataTable
+          columns={columns}
+          rows={rows as Array<Record<string, unknown>>}
+          isLoading={cdrQuery.isPending}
+          emptyMessage="No CDR records found"
+          minWidthClassName="min-w-[110rem]"
+          getRowKey={(row, idx) => String((row as Record<string, unknown>).id ?? idx)}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        {label}
+      </label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+      >
+        {options.map((o) => (
+          <option key={`${o.value}-${o.label}`} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        {label}
+      </label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+      />
+    </div>
+  );
+}
+
+function DateField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        {label}
+      </label>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+      />
+    </div>
+  );
+}

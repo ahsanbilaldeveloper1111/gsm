@@ -1,8 +1,8 @@
-const STORAGE_KEY = "billing.jwt";
-const EXPIRES_AT_KEY = "billing.jwt.expiresAt";
+const STORAGE_KEY = "gsm.jwt";
+const EXPIRES_AT_KEY = "gsm.jwt.expiresAt";
 
 /** Same-tab localStorage updates (login/logout) — `storage` event only fires for *other* tabs. */
-const TOKEN_CHANGED_EVENT = "billing:jwt-changed";
+const TOKEN_CHANGED_EVENT = "gsm:jwt-changed";
 
 let memoryToken: string | null = null;
 

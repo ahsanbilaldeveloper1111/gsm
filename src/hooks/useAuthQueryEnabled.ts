@@ -1,9 +1,7 @@
 "use client";
 
-import { useAuth } from "@/contexts/auth-context";
-
 /** Use as `enabled` for React Query calls that require JWT. */
 export function useAuthQueryEnabled(): boolean {
-  const { token } = useAuth();
-  return !!token;
+  // JWT is stored in an HTTP-only cookie and attached by proxy middleware.
+  return true;
 }

@@ -261,6 +261,138 @@ const icons: Partial<Record<string, ReactNode>> = {
       }
     />
   ),
+  [appPaths.gsm]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 6h16M6 10h12M8 14h8M10 18h4"
+        />
+      }
+    />
+  ),
+  [appPaths.gsmCompanies]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 7h16M4 12h16M4 17h16M9 7v10m6-10v10"
+        />
+      }
+    />
+  ),
+  [appPaths.clientGsmProfiling]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 19h16M6 16V8m4 8V5m4 11v-6m4 6V9"
+        />
+      }
+    />
+  ),
+  [appPaths.ports]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M7 7h10M7 12h10M7 17h10M4 7h.01M4 12h.01M4 17h.01"
+        />
+      }
+    />
+  ),
+  [appPaths.notifications]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9"
+        />
+      }
+    />
+  ),
+  [appPaths.conversations]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8 10h8m-8 4h5m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      }
+    />
+  ),
+  [appPaths.ussd]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8 10h8m-8 4h5m-2 7a9 9 0 100-18 9 9 0 000 18z"
+        />
+      }
+    />
+  ),
+  [appPaths.syncPorts]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 4v5h.582m14.836 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0H15m4.419 0A8.003 8.003 0 016.4 19.5"
+        />
+      }
+    />
+  ),
+  [appPaths.sims]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2zm3 3h4m-4 4h4m-4 4h4"
+        />
+      }
+    />
+  ),
+  [appPaths.outbox]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3 8l9 6 9-6M4 18h16a1 1 0 001-1V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1z"
+        />
+      }
+    />
+  ),
+  [appPaths.inbox]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3 8l9 6 9-6M4 18h16a1 1 0 001-1V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1zm5-5h6"
+        />
+      }
+    />
+  ),
+  [appPaths.cdr]: (
+    <Svg
+      path={
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 12h6m-6 4h4M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"
+        />
+      }
+    />
+  ),
 };
 
 export function NavIcon({ href, active }: { href: string; active?: boolean }) {

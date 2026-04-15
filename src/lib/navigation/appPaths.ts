@@ -24,6 +24,18 @@ export const appPaths = {
   auditLogs: "/audit-logs",
   inventory: "/inventory",
   stripe: "/stripe",
+  gsm: "/gsm",
+  ports: "/ports",
+  notifications: "/notifications",
+  conversations: "/conversations",
+  ussd: "/ussd",
+  syncPorts: "/sync-ports",
+  sims: "/sims",
+  outbox: "/outbox",
+  inbox: "/inbox",
+  gsmCompanies: "/gsm-companies",
+  clientGsmProfiling: "/client-gsm-profiling",
+  cdr: "/cdr",
 } as const;
 
 export type AppPath = (typeof appPaths)[keyof typeof appPaths];
