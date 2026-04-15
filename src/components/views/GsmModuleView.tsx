@@ -13,6 +13,12 @@ import type {
   UpdateGsmPayload,
 } from "@/models/Gsm";
 import { gsmService } from "@/services/gsm.service";
+import {
+  FilterPanel,
+  FilterPanelField,
+  filterSelectControlClassName,
+  filterTextControlClassName,
+} from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import {
   deriveTotalsFromTelecomPagination,
@@ -252,55 +258,56 @@ export function GsmModuleView() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-zinc-200/90 bg-white/90 p-4 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-950/40 dark:ring-white/5 sm:p-5">
-        <p className="mb-3 text-xs font-medium text-zinc-500 dark:text-zinc-400">Filters</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
-          <InputField
-            label="IP address"
+      <FilterPanel
+        primaryAction={{
+          label: "Apply filters",
+          onClick: () => {
+            setFilters({ ...draft });
+            setPage(1);
+          },
+        }}
+      >
+        <FilterPanelField label="IP address">
+          <input
+            type="text"
             value={draft.ip_address}
-            onChange={(v) => setDraft((s) => ({ ...s, ip_address: v }))}
+            onChange={(e) => setDraft((s) => ({ ...s, ip_address: e.target.value }))}
             placeholder="e.g. 192.168.1.1"
+            className={filterTextControlClassName}
           />
-          <InputField
-            label="GSM name"
+        </FilterPanelField>
+        <FilterPanelField label="GSM name">
+          <input
+            type="text"
             value={draft.name}
-            onChange={(v) => setDraft((s) => ({ ...s, name: v }))}
+            onChange={(e) => setDraft((s) => ({ ...s, name: e.target.value }))}
             placeholder="Search by name"
+            className={filterTextControlClassName}
           />
-          <SelectField
-            label="GSM status"
+        </FilterPanelField>
+        <FilterPanelField label="GSM status">
+          <select
             value={draft.status}
-            onChange={(v) => setDraft((s) => ({ ...s, status: v }))}
-            options={[
-              { value: "", label: "All" },
-              { value: "active", label: "Active" },
-              { value: "inactive", label: "Inactive" },
-            ]}
-          />
-          <SelectField
-            label="Device status"
+            onChange={(e) => setDraft((s) => ({ ...s, status: e.target.value }))}
+            className={filterSelectControlClassName}
+          >
+            <option value="">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </FilterPanelField>
+        <FilterPanelField label="Device status">
+          <select
             value={draft.device_status}
-            onChange={(v) => setDraft((s) => ({ ...s, device_status: v }))}
-            options={[
-              { value: "", label: "All" },
-              { value: "power_on", label: "Power on" },
-              { value: "power_off", label: "Power off" },
-            ]}
-          />
-          <div className="flex items-end lg:col-span-2">
-            <button
-              type="button"
-              onClick={() => {
-                setFilters({ ...draft });
-                setPage(1);
-              }}
-              className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto dark:bg-emerald-600 dark:hover:bg-emerald-500"
-            >
-              Apply filters
-            </button>
-          </div>
-        </div>
-      </div>
+            onChange={(e) => setDraft((s) => ({ ...s, device_status: e.target.value }))}
+            className={filterSelectControlClassName}
+          >
+            <option value="">All</option>
+            <option value="power_on">Power on</option>
+            <option value="power_off">Power off</option>
+          </select>
+        </FilterPanelField>
+      </FilterPanel>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-950/50 dark:ring-white/5">
         <div className="flex flex-col gap-3 border-b border-zinc-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 dark:border-zinc-800/80">

@@ -2,6 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import {
+  FilterPanel,
+  filterFieldLabelClassName,
+  filterSelectControlClassName,
+} from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import {
@@ -220,7 +225,15 @@ export function GsmCompaniesModuleView() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <FilterPanel
+        primaryAction={{
+          label: "Apply filters",
+          onClick: () => {
+            setFilters({ ...draft });
+            setPage(1);
+          },
+        }}
+      >
         <SelectField
           label="Select GSM"
           value={draft.gsm_id}
@@ -243,29 +256,19 @@ export function GsmCompaniesModuleView() {
             })),
           )}
         />
-        <div className="flex items-end gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setFilters({ ...draft });
-              setPage(1);
-            }}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
-          >
-            Submit
-          </button>
+      </FilterPanel>
+
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/50">
+        <div className="flex flex-col gap-3 border-b border-zinc-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+          <span className="text-sm font-semibold">Details</span>
           <button
             type="button"
             onClick={() => setShowAssign(true)}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
+            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
           >
             + Add GSM Company
           </button>
         </div>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/50">
-        <div className="border-b border-zinc-200 px-4 py-3 text-sm font-semibold dark:border-zinc-800">Details</div>
         <PaginatedDataTable
           columns={columns}
           rows={rows as Array<Record<string, unknown>>}
@@ -445,11 +448,11 @@ function SelectField({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{label}</label>
+      <label className={filterFieldLabelClassName}>{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className={filterSelectControlClassName}
       >
         {options.map((o) => (
           <option key={`${o.value}-${o.label}`} value={o.value}>

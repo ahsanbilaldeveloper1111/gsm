@@ -1,6 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  FilterPanel,
+  filterFieldLabelClassName,
+  filterSecondaryButtonClassName,
+  filterSelectControlClassName,
+  filterTextControlClassName,
+} from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useCdr } from "@/hooks/cdr/useCdr";
 import { useGsm } from "@/hooks/gsm/useGsm";
@@ -89,7 +96,37 @@ export function CdrModuleView() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
+      <FilterPanel
+        fieldsClassName="flex flex-wrap items-end gap-4"
+        primaryAction={{
+          label: "Apply filters",
+          onClick: () => {
+            setFilters({ ...draft });
+            setPage(1);
+          },
+        }}
+        secondaryActions={
+          <button
+            type="button"
+            className={filterSecondaryButtonClassName}
+            onClick={() => {
+              const empty = {
+                gsm_id: "",
+                port_id: "",
+                source_number: "",
+                destination_number: "",
+                start_date: "",
+                answer_date: "",
+              };
+              setDraft(empty);
+              setFilters(empty);
+              setPage(1);
+            }}
+          >
+            Clear
+          </button>
+        }
+      >
         <SelectField
           label="GSM"
           value={draft.gsm_id}
@@ -132,39 +169,7 @@ export function CdrModuleView() {
           value={draft.answer_date}
           onChange={(v) => setDraft((s) => ({ ...s, answer_date: v }))}
         />
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            const empty = {
-              gsm_id: "",
-              port_id: "",
-              source_number: "",
-              destination_number: "",
-              start_date: "",
-              answer_date: "",
-            };
-            setDraft(empty);
-            setFilters(empty);
-            setPage(1);
-          }}
-          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-        >
-          Clear
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setFilters({ ...draft });
-            setPage(1);
-          }}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
-        >
-          Submit
-        </button>
-      </div>
+      </FilterPanel>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/50">
         <div className="border-b border-zinc-200 px-4 py-3 text-sm font-semibold dark:border-zinc-800">
@@ -207,13 +212,11 @@ function SelectField({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        {label}
-      </label>
+      <label className={filterFieldLabelClassName}>{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className={filterSelectControlClassName}
       >
         {options.map((o) => (
           <option key={`${o.value}-${o.label}`} value={o.value}>
@@ -236,13 +239,11 @@ function TextField({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        {label}
-      </label>
+      <label className={filterFieldLabelClassName}>{label}</label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className={filterTextControlClassName}
       />
     </div>
   );
@@ -259,14 +260,12 @@ function DateField({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        {label}
-      </label>
+      <label className={filterFieldLabelClassName}>{label}</label>
       <input
         type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className={filterTextControlClassName}
       />
     </div>
   );

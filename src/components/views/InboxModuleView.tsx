@@ -1,6 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  FilterPanel,
+  FilterPanelField,
+  filterSecondaryButtonClassName,
+  filterSelectControlClassName,
+  filterTextControlClassName,
+} from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { useInbox } from "@/hooks/inbox/useInbox";
@@ -75,13 +82,32 @@ export function InboxModuleView() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            GSM
-          </label>
+      <FilterPanel
+        primaryAction={{
+          label: "Apply filters",
+          onClick: () => {
+            setFilters({ ...draft });
+            setPage(1);
+          },
+        }}
+        secondaryActions={
+          <button
+            type="button"
+            className={filterSecondaryButtonClassName}
+            onClick={() => {
+              const empty = { gsm_id: "", port_id: "", sender: "", message: "" };
+              setDraft(empty);
+              setFilters(empty);
+              setPage(1);
+            }}
+          >
+            Clear
+          </button>
+        }
+      >
+        <FilterPanelField label="GSM">
           <select
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className={filterSelectControlClassName}
             value={draft.gsm_id}
             onChange={(e) =>
               setDraft((s) => ({ ...s, gsm_id: e.target.value, port_id: "" }))
@@ -94,14 +120,10 @@ export function InboxModuleView() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Port
-          </label>
+        </FilterPanelField>
+        <FilterPanelField label="Port">
           <select
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className={filterSelectControlClassName}
             value={draft.port_id}
             onChange={(e) => setDraft((s) => ({ ...s, port_id: e.target.value }))}
           >
@@ -112,57 +134,24 @@ export function InboxModuleView() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Sender
-          </label>
+        </FilterPanelField>
+        <FilterPanelField label="Sender">
           <input
             value={draft.sender}
             onChange={(e) => setDraft((s) => ({ ...s, sender: e.target.value }))}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className={filterTextControlClassName}
             placeholder="Enter Sender"
           />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Message
-          </label>
+        </FilterPanelField>
+        <FilterPanelField label="Message">
           <input
             value={draft.message}
             onChange={(e) => setDraft((s) => ({ ...s, message: e.target.value }))}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className={filterTextControlClassName}
             placeholder="Enter Message"
           />
-        </div>
-
-        <div className="flex items-end gap-2 md:col-span-2">
-          <button
-            type="button"
-            onClick={() => {
-              setFilters({ ...draft });
-              setPage(1);
-            }}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
-          >
-            Submit
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const empty = { gsm_id: "", port_id: "", sender: "", message: "" };
-              setDraft(empty);
-              setFilters(empty);
-              setPage(1);
-            }}
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
+        </FilterPanelField>
+      </FilterPanel>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/50">
         <div className="border-b border-zinc-200 px-4 py-3 text-sm font-semibold dark:border-zinc-800">

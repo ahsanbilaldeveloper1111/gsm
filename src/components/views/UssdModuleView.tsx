@@ -1,6 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  FilterPanel,
+  FilterPanelField,
+  filterSelectControlClassName,
+} from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { usePortsByGsm } from "@/hooks/ports/usePorts";
@@ -60,13 +65,19 @@ export function UssdModuleView() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            GSM
-          </label>
+      <FilterPanel
+        primaryAction={{
+          label: "Apply filters",
+          onClick: () => {
+            setGsmFilter(gsmDraft);
+            setPortFilter(portDraft);
+            setPage(1);
+          },
+        }}
+      >
+        <FilterPanelField label="GSM">
           <select
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className={filterSelectControlClassName}
             value={gsmDraft}
             onChange={(e) => {
               setGsmDraft(e.target.value);
@@ -80,14 +91,10 @@ export function UssdModuleView() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Select Port
-          </label>
+        </FilterPanelField>
+        <FilterPanelField label="Port">
           <select
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className={filterSelectControlClassName}
             value={portDraft}
             onChange={(e) => setPortDraft(e.target.value)}
             disabled={!gsmDraft}
@@ -99,22 +106,8 @@ export function UssdModuleView() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={() => {
-              setGsmFilter(gsmDraft);
-              setPortFilter(portDraft);
-              setPage(1);
-            }}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
-          >
-            Submit
-          </button>
-        </div>
-      </div>
+        </FilterPanelField>
+      </FilterPanel>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/50">
         <div className="border-b border-zinc-200 px-4 py-3 text-sm font-semibold dark:border-zinc-800">

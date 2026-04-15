@@ -1,6 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  FilterPanel,
+  filterFieldLabelClassName,
+  filterSelectControlClassName,
+  filterTextControlClassName,
+} from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useGsm } from "@/hooks/gsm/useGsm";
@@ -202,7 +208,12 @@ export function SimManagementView() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
+      <FilterPanel
+        primaryAction={{
+          label: "Apply filters",
+          onClick: onApplyFilters,
+        }}
+      >
         <FilterSelect
           label="Select GSM"
           value={filtersDraft.gsm_id}
@@ -247,16 +258,7 @@ export function SimManagementView() {
             { value: "inactive", label: "Inactive" },
           ]}
         />
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={onApplyFilters}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
-          >
-            Submit
-          </button>
-        </div>
-      </div>
+      </FilterPanel>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/50">
         <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
@@ -334,13 +336,11 @@ function FilterSelect({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        {label}
-      </label>
+      <label className={filterFieldLabelClassName}>{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className={filterSelectControlClassName}
       >
         {options.map((o) => (
           <option key={`${o.value}-${o.label}`} value={o.value}>
@@ -365,14 +365,12 @@ function FilterInput({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        {label}
-      </label>
+      <label className={filterFieldLabelClassName}>{label}</label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className={filterTextControlClassName}
       />
     </div>
   );

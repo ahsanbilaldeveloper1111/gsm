@@ -14,6 +14,13 @@ import { queryKeys } from "@/lib/queryKeys";
 import { showAppToast, showBillingBackendErrorToast } from "@/lib/toast/appToast";
 import type { IndexPortParams } from "@/models/Port";
 import { portsService } from "@/services/ports.service";
+import {
+  FilterPanel,
+  filterFieldLabelClassName,
+  filterSecondaryButtonClassName,
+  filterSelectControlClassName,
+  filterTextControlClassName,
+} from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 
 type PortFilters = {
@@ -187,7 +194,28 @@ export function PortsModuleView() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-7">
+      <FilterPanel
+        primaryAction={{
+          label: "Apply filters",
+          onClick: () => {
+            setFilters({ ...draft });
+            setPage(1);
+          },
+        }}
+        secondaryActions={
+          <button
+            type="button"
+            className={filterSecondaryButtonClassName}
+            onClick={() => {
+              setDraft(defaultFilters);
+              setFilters(defaultFilters);
+              setPage(1);
+            }}
+          >
+            Clear
+          </button>
+        }
+      >
         <SelectField
           label="GSM"
           value={draft.gsm_id}
@@ -255,31 +283,7 @@ export function PortsModuleView() {
           onChange={(value) => setDraft((s) => ({ ...s, iccid: value }))}
           placeholder="Enter ICCID"
         />
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            setFilters({ ...draft });
-            setPage(1);
-          }}
-          className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white dark:bg-emerald-600"
-        >
-          Submit
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setDraft(defaultFilters);
-            setFilters(defaultFilters);
-            setPage(1);
-          }}
-          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-        >
-          Clear
-        </button>
-      </div>
+      </FilterPanel>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/50">
         <div className="border-b border-zinc-200 px-4 py-3 text-sm font-semibold dark:border-zinc-800">
@@ -360,13 +364,11 @@ function SelectField({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        {label}
-      </label>
+      <label className={filterFieldLabelClassName}>{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className={filterSelectControlClassName}
       >
         {options.map((o) => (
           <option key={`${o.value}-${o.label}`} value={o.value}>
@@ -391,14 +393,12 @@ function InputField({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        {label}
-      </label>
+      <label className={filterFieldLabelClassName}>{label}</label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className={filterTextControlClassName}
       />
     </div>
   );
