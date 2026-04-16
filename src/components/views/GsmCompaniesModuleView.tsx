@@ -41,6 +41,75 @@ function fmt(input?: string): string {
   return Number.isNaN(d.getTime()) ? input : d.toLocaleString("en-GB");
 }
 
+function asNestedRecord(v: unknown): Record<string, unknown> | null {
+  if (v && typeof v === "object" && !Array.isArray(v)) return v as Record<string, unknown>;
+  if (Array.isArray(v) && v[0] && typeof v[0] === "object" && !Array.isArray(v[0])) {
+    return v[0] as Record<string, unknown>;
+  }
+  return null;
+}
+
+type GsmListRow = { id?: number | string; name?: string; ip_address?: string };
+
+/** API may omit nested `gsm` / `company` when paginating — resolve from row, flat keys, or dropdown lists. */
+function resolveGsmMeta(
+  row: Record<string, unknown>,
+  gsmList: GsmListRow[],
+): { id: string; name: string; ip: string } {
+  const g = asNestedRecord(row.gsm);
+  const gid =
+    g?.id != null
+      ? String(g.id)
+      : row.gsm_id != null
+        ? String(row.gsm_id)
+        : row.gsmId != null
+          ? String(row.gsmId)
+          : "";
+  let name = g?.name != null ? String(g.name) : "";
+  let ip = g?.ip_address != null ? String(g.ip_address) : "";
+  if (!name && row.gsm_name != null) name = String(row.gsm_name);
+  if (!name && row.gsmName != null) name = String(row.gsmName);
+  if (!ip && row.gsm_ip != null) ip = String(row.gsm_ip);
+  if (!ip && row.ip_address != null) ip = String(row.ip_address);
+  if (gid) {
+    const hit = gsmList.find((x) => String(x.id ?? "") === gid);
+    if (hit) {
+      if (!name) name = String(hit.name ?? "");
+      if (!ip) ip = String(hit.ip_address ?? "");
+    }
+  }
+  return { id: gid, name: name.trim() ? name : "-", ip: ip.trim() ? ip : "-" };
+}
+
+function resolveCompanyMeta(
+  row: Record<string, unknown>,
+  companies: Array<Record<string, unknown>>,
+): { id: string; name: string } {
+  const c = asNestedRecord(row.company);
+  const cid =
+    c?.id != null
+      ? String(c.id)
+      : row.company_id != null
+        ? String(row.company_id)
+        : row.companyId != null
+          ? String(row.companyId)
+          : "";
+  let name = c?.name != null ? String(c.name) : "";
+  if (!name && row.company_name != null) name = String(row.company_name);
+  if (!name && row.companyName != null) name = String(row.companyName);
+  if (cid) {
+    const hit = companies.find((x) => String(x.id ?? "") === cid);
+    if (hit?.name != null && !name) name = String(hit.name);
+  }
+  return { id: cid, name: name.trim() ? name : "-" };
+}
+
+function resolveCreatedAt(row: Record<string, unknown>): string {
+  const v = row.created_at ?? row.createdAt ?? row.updated_at ?? row.updatedAt;
+  if (v == null || v === "") return "-";
+  return fmt(String(v));
+}
+
 export function GsmCompaniesModuleView() {
   const [draft, setDraft] = useState({ gsm_id: "", company_id: "" });
   const [filters, setFilters] = useState(draft);
@@ -90,12 +159,33 @@ export function GsmCompaniesModuleView() {
   useClampPageToLastPage(listPagination?.last_page, page, setPage);
   const gsmRows = gsmQuery.data?.rows ?? [];
   const companyRows = useMemo(() => extractRows(companiesQuery.data), [companiesQuery.data]);
+
+  const assignablePortsQuery = useMutation({
+    mutationFn: (gsm_id: string) => portsService.byGsm(gsm_id),
+  });
+  const assignedPortsQuery = useMutation({
+    mutationFn: (args: { gsm_id: string; company_id: string }) =>
+      portsService.assigned(args.gsm_id, args.company_id),
+  });
+
   const columns = useMemo(
     () => [
       { key: "id", header: "ID", render: (r: Record<string, unknown>) => String(r.id ?? "-") },
-      { key: "gsm", header: "GSM", render: (r: Record<string, unknown>) => String((r.gsm as Record<string, unknown> | undefined)?.name ?? "-") },
-      { key: "ip", header: "IP Address", render: (r: Record<string, unknown>) => String((r.gsm as Record<string, unknown> | undefined)?.ip_address ?? "-") },
-      { key: "company", header: "Company", render: (r: Record<string, unknown>) => String((r.company as Record<string, unknown> | undefined)?.name ?? "-") },
+      {
+        key: "gsm",
+        header: "GSM",
+        render: (r: Record<string, unknown>) => resolveGsmMeta(r, gsmRows).name,
+      },
+      {
+        key: "ip",
+        header: "IP Address",
+        render: (r: Record<string, unknown>) => resolveGsmMeta(r, gsmRows).ip,
+      },
+      {
+        key: "company",
+        header: "Company",
+        render: (r: Record<string, unknown>) => resolveCompanyMeta(r, companyRows).name,
+      },
       { key: "assigned_ports", header: "Assigned Ports", render: (r: Record<string, unknown>) => String(r.assigned_ports ?? "-") },
       {
         key: "status",
@@ -107,65 +197,93 @@ export function GsmCompaniesModuleView() {
             <span className="rounded-full bg-rose-100 px-2 py-1 text-xs text-rose-700">Inactive</span>
           ),
       },
-      { key: "created_at", header: "Created At", render: (r: Record<string, unknown>) => fmt(String(r.created_at ?? "")) },
+      { key: "created_at", header: "Created At", render: (r: Record<string, unknown>) => resolveCreatedAt(r) },
       {
         key: "actions",
         header: "Actions",
-        render: (r: Record<string, unknown>) => (
-          <div className="flex flex-wrap gap-2">
-            <button className="rounded bg-emerald-600 px-2 py-1 text-xs text-white" onClick={() => {
-              setCtx({ gsm_id: String((r.gsm as Record<string, unknown> | undefined)?.id ?? ""), company_id: String((r.company as Record<string, unknown> | undefined)?.id ?? "") });
-              setSmsForm({ mobile: "", message: "", port: "" });
-              setShowSms(true);
-            }}>Send SMS</button>
-            <button className="rounded bg-amber-500 px-2 py-1 text-xs text-white" onClick={() => {
-              setCtx({ gsm_id: String((r.gsm as Record<string, unknown> | undefined)?.id ?? ""), company_id: String((r.company as Record<string, unknown> | undefined)?.id ?? "") });
-              setUssdForm({ text: "", port: "" });
-              setShowUssd(true);
-            }}>Send USSD</button>
-            <button className="rounded bg-sky-600 px-2 py-1 text-xs text-white" onClick={async () => {
-              const gsm_id = String((r.gsm as Record<string, unknown> | undefined)?.id ?? "");
-              const company_id = String((r.company as Record<string, unknown> | undefined)?.id ?? "");
-              setCtx({ gsm_id, company_id });
-              setAssignPortId("");
-              await assignablePortsQuery.mutateAsync(gsm_id);
-              setShowAssignPort(true);
-            }}>Assign Port</button>
-            <button className="rounded bg-sky-600 px-2 py-1 text-xs text-white" onClick={async () => {
-              const gsm_id = String((r.gsm as Record<string, unknown> | undefined)?.id ?? "");
-              const company_id = String((r.company as Record<string, unknown> | undefined)?.id ?? "");
-              setCtx({ gsm_id, company_id });
-              setUnassignPortId("");
-              await assignedPortsQuery.mutateAsync({ gsm_id, company_id });
-              setShowUnassignPort(true);
-            }}>Un-Assign Port</button>
-            <button className="rounded bg-zinc-900 px-2 py-1 text-xs text-white dark:bg-emerald-600" onClick={() => {
-              setEditState({
-                id: String(r.id ?? ""),
-                gsm_id: String((r.gsm as Record<string, unknown> | undefined)?.id ?? ""),
-                company_id: String((r.company as Record<string, unknown> | undefined)?.id ?? ""),
-                status: String(r.status ?? "active"),
-              });
-              setShowEdit(true);
-            }}>Edit</button>
-            <button className="rounded bg-rose-600 px-2 py-1 text-xs text-white" onClick={() => {
-              if (!r.id || !window.confirm("Are you sure you want to delink this GSM Company?")) return;
-              destroy.mutate(r.id as number | string);
-            }}>Delink Company</button>
-          </div>
-        ),
+        render: (r: Record<string, unknown>) => {
+          const gsm = resolveGsmMeta(r, gsmRows);
+          const co = resolveCompanyMeta(r, companyRows);
+          return (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded bg-emerald-600 px-2 py-1 text-xs text-white"
+                onClick={() => {
+                  setCtx({ gsm_id: gsm.id, company_id: co.id });
+                  setSmsForm({ mobile: "", message: "", port: "" });
+                  setShowSms(true);
+                }}
+              >
+                Send SMS
+              </button>
+              <button
+                type="button"
+                className="rounded bg-amber-500 px-2 py-1 text-xs text-white"
+                onClick={() => {
+                  setCtx({ gsm_id: gsm.id, company_id: co.id });
+                  setUssdForm({ text: "", port: "" });
+                  setShowUssd(true);
+                }}
+              >
+                Send USSD
+              </button>
+              <button
+                type="button"
+                className="rounded bg-sky-600 px-2 py-1 text-xs text-white"
+                onClick={async () => {
+                  setCtx({ gsm_id: gsm.id, company_id: co.id });
+                  setAssignPortId("");
+                  await assignablePortsQuery.mutateAsync(gsm.id);
+                  setShowAssignPort(true);
+                }}
+              >
+                Assign Port
+              </button>
+              <button
+                type="button"
+                className="rounded bg-sky-600 px-2 py-1 text-xs text-white"
+                onClick={async () => {
+                  setCtx({ gsm_id: gsm.id, company_id: co.id });
+                  setUnassignPortId("");
+                  await assignedPortsQuery.mutateAsync({ gsm_id: gsm.id, company_id: co.id });
+                  setShowUnassignPort(true);
+                }}
+              >
+                Un-Assign Port
+              </button>
+              <button
+                type="button"
+                className="rounded bg-zinc-900 px-2 py-1 text-xs text-white dark:bg-emerald-600"
+                onClick={() => {
+                  setEditState({
+                    id: String(r.id ?? ""),
+                    gsm_id: gsm.id,
+                    company_id: co.id,
+                    status: String(r.status ?? "active"),
+                  });
+                  setShowEdit(true);
+                }}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className="rounded bg-rose-600 px-2 py-1 text-xs text-white"
+                onClick={() => {
+                  if (!r.id || !window.confirm("Are you sure you want to delink this GSM Company?")) return;
+                  destroy.mutate(r.id as number | string);
+                }}
+              >
+                Delink Company
+              </button>
+            </div>
+          );
+        },
       },
     ],
-    [destroy],
+    [assignablePortsQuery, assignedPortsQuery, companyRows, destroy, gsmRows],
   );
-
-  const assignablePortsQuery = useMutation({
-    mutationFn: (gsm_id: string) => portsService.byGsm(gsm_id),
-  });
-  const assignedPortsQuery = useMutation({
-    mutationFn: (args: { gsm_id: string; company_id: string }) =>
-      portsService.assigned(args.gsm_id, args.company_id),
-  });
 
   const assignPortMutation = useMutation({
     mutationFn: () =>

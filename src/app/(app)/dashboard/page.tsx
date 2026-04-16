@@ -9,9 +9,9 @@ export default function DashboardPage() {
     <PageFrame>
       <PageHeader
         title="Dashboard"
-        description="Charts and key metrics for your billing workspace."
+        description="Telecom overview, assignments, inbox, and usage charts — powered by your dashboard API."
       />
-      <div className="mt-10 space-y-10">
+      <div className="mt-8 space-y-10">
         <DashboardOverview />
       </div>
     </PageFrame>

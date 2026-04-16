@@ -4,11 +4,7 @@ import type { ApiSuccessResponse } from "@/lib/api/types";
 import { postJsonWithXhr } from "@/lib/auth/postJsonWithXhr";
 import { getXsrfHeadersForFetch } from "@/lib/auth/xsrfBrowser";
 import { apiRoutes } from "@/lib/routes/apiRoutes";
-import {
-  getAuthApiRequestBase,
-  getInternalNextOrigin,
-  TELECOM_API_DATA_TYPE,
-} from "@/lib/env";
+import { getAuthApiRequestBase, getInternalNextOrigin } from "@/lib/env";
 import { User } from "@/models/User";
 import { fetchSanctumCsrfCookie } from "@/services/sanctum.service";
 
@@ -58,8 +54,8 @@ async function logLoginFlowServer(
   logLoginFlowError({ phase, ...detail });
 }
 
-/** Login bypasses Axios — add `data_type=external` to match {@link TELECOM_API_DATA_TYPE} on all API calls. */
-function loginUrlWithDataType(path: string): string {
+/** Resolves login POST URL (XHR bypasses Axios; still needs absolute URL when base is relative). */
+function resolveLoginRequestUrl(path: string): string {
   const raw = `${getAuthApiRequestBase()}${path}`;
   const origin =
     typeof window !== "undefined"
@@ -69,11 +65,9 @@ function loginUrlWithDataType(path: string): string {
     const u = /^https?:\/\//i.test(raw)
       ? new URL(raw)
       : new URL(raw.startsWith("/") ? raw : `/${raw}`, origin);
-    u.searchParams.set("data_type", TELECOM_API_DATA_TYPE);
     return u.toString();
   } catch {
-    const sep = raw.includes("?") ? "&" : "?";
-    return `${raw}${sep}data_type=${encodeURIComponent(TELECOM_API_DATA_TYPE)}`;
+    return raw;
   }
 }
 
@@ -92,7 +86,7 @@ export async function loginRequest(body: LoginPayload): Promise<LoginResult> {
     await logLoginFlowServer("validation_missing_credentials", {});
     throw new Error("Email and password are required.");
   }
-  const url = loginUrlWithDataType(apiRoutes.auth.login());
+  const url = resolveLoginRequestUrl(apiRoutes.auth.login());
   const payload = JSON.stringify({
     email: identifier,
     samaccountname: identifier,

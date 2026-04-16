@@ -3,7 +3,6 @@ import { getBillingBackendHttpsAgent } from "@/lib/api/nodeTlsAgent";
 import {
   BILLING_BACKEND_PROXY_BASE,
   getAxiosBaseUrl,
-  TELECOM_API_DATA_TYPE,
   useSameOriginApiProxy,
 } from "@/lib/env";
 import { apiRoutes } from "@/lib/routes/apiRoutes";
@@ -30,6 +29,19 @@ function applyXsrfHeaderFromCookie(config: InternalAxiosRequestConfig): void {
   const value = match ? decodeURIComponent(match[1]) : null;
   if (!value) return;
   config.headers.set(XSRF_HEADER, value);
+}
+
+/**
+ * Laravel / telecom APIs often expect both `gsm_id` and `gsm` (same identifier) on requests.
+ * Fills `gsm` from `gsm_id` when `gsm` is absent or empty.
+ */
+function mirrorGsmIdToGsmRecord(rec: Record<string, unknown>): Record<string, unknown> {
+  if (!Object.prototype.hasOwnProperty.call(rec, "gsm_id")) return rec;
+  const gid = rec.gsm_id;
+  if (gid === undefined || gid === null || gid === "") return rec;
+  const existing = rec.gsm;
+  if (existing !== undefined && existing !== null && existing !== "") return rec;
+  return { ...rec, gsm: gid };
 }
 
 /** Only spread plain JSON objects — `typeof x === "object"` is true for `Blob`, `null`, etc. */
@@ -59,14 +71,22 @@ function mergeJsonBody(config: InternalAxiosRequestConfig): void {
   if (d == null) return;
   if (d instanceof FormData) {
     d.append(SUPER_Q, SUPER_V);
+    const gid = d.get("gsm_id");
+    if (gid != null && String(gid) !== "" && (d.get("gsm") == null || String(d.get("gsm")) === "")) {
+      d.append("gsm", String(gid));
+    }
     return;
   }
   if (typeof URLSearchParams !== "undefined" && d instanceof URLSearchParams) {
     d.set(SUPER_Q, SUPER_V);
+    const gid = d.get("gsm_id");
+    if (gid != null && gid !== "" && (d.get("gsm") == null || d.get("gsm") === "")) {
+      d.set("gsm", String(gid));
+    }
     return;
   }
   if (isPlainObjectForJsonMerge(d)) {
-    config.data = { ...d, is_super_user: 1 };
+    config.data = { ...mirrorGsmIdToGsmRecord({ ...d }), is_super_user: 1 };
     return;
   }
   if (typeof d === "string") {
@@ -81,7 +101,7 @@ function mergeJsonBody(config: InternalAxiosRequestConfig): void {
         !(parsed instanceof Array)
       ) {
         config.data = JSON.stringify({
-          ...(parsed as Record<string, unknown>),
+          ...mirrorGsmIdToGsmRecord(parsed as Record<string, unknown>),
           is_super_user: 1,
         });
       }
@@ -138,10 +158,11 @@ function applyRequestInterceptors(client: AxiosInstance): void {
     }
 
     const method = (config.method ?? "get").toLowerCase();
-    const baseParams =
+    const baseParamsRaw =
       typeof config.params === "object" && config.params !== null
-        ? config.params
+        ? (config.params as Record<string, unknown>)
         : {};
+    const baseParams = mirrorGsmIdToGsmRecord({ ...baseParamsRaw });
 
     /**
      * Put `is_super_user` on the query string only when the request has no JSON/form body that
@@ -169,8 +190,7 @@ function applyRequestInterceptors(client: AxiosInstance): void {
     config.params = {
       ...baseParams,
       ...(addSuperUserToQuery ? { [SUPER_Q]: SUPER_V } : {}),
-      data_type: TELECOM_API_DATA_TYPE,
-    };
+    } as typeof config.params;
 
     if (!config.headers.get("Accept") && !config.headers.get("accept")) {
       config.headers.set("Accept", "application/json");
@@ -284,6 +304,7 @@ let _client: AxiosInstance | null = null;
  * - Server-side only: `API_TLS_INSECURE=1` uses `getBillingBackendHttpsAgent()` (same as proxy route handlers)
  * - Browser: on 401 or 403, call `POST /get-token` and retry once (no forced redirect).
  * - When `NEXT_PUBLIC_API_SAME_ORIGIN_PROXY` is off, `baseURL` is Laravel (`getPublicApiBaseUrl`); CORS must allow this origin.
+ * - Request interceptor: if `gsm_id` is set and `gsm` is empty, mirrors the same id into `gsm` (query + JSON/form bodies).
  */
 export function getApiClient(): AxiosInstance {
   if (!_client) {

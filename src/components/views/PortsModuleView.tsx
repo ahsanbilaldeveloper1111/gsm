@@ -82,6 +82,54 @@ function extractMessage(payload: unknown): string {
   return "Completed.";
 }
 
+function pickCompanyLabel(obj: Record<string, unknown>): string | null {
+  for (const key of ["name", "company_name", "title", "label"] as const) {
+    const v = obj[key];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
+
+/** API may return `companies` as a string, `{ name }`, or an array — avoid `String(object)` → `[object Object]`. */
+function formatPortCompanyCell(
+  row: Record<string, unknown>,
+  companyRows: Array<Record<string, unknown>>,
+): string {
+  const raw = row.companies;
+  if (raw != null && raw !== "") {
+    if (typeof raw === "string" && raw.trim()) return raw.trim();
+    if (Array.isArray(raw)) {
+      const labels = raw
+        .map((item) => {
+          if (item && typeof item === "object" && !Array.isArray(item)) {
+            return pickCompanyLabel(item as Record<string, unknown>);
+          }
+          if (typeof item === "string") return item.trim() || null;
+          return null;
+        })
+        .filter((s): s is string => Boolean(s));
+      if (labels.length) return labels.join(", ");
+    }
+    if (typeof raw === "object" && !Array.isArray(raw)) {
+      const one = pickCompanyLabel(raw as Record<string, unknown>);
+      if (one) return one;
+    }
+  }
+  const nested = row.company;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    const one = pickCompanyLabel(nested as Record<string, unknown>);
+    if (one) return one;
+  }
+  if (typeof row.company_name === "string" && row.company_name.trim()) return row.company_name.trim();
+  if (typeof row.companyName === "string" && row.companyName.trim()) return row.companyName.trim();
+  if (row.company_id != null && row.company_id !== "") {
+    const id = String(row.company_id);
+    const hit = companyRows.find((c) => String(c.id ?? "") === id);
+    if (hit && typeof hit.name === "string" && hit.name.trim()) return hit.name.trim();
+  }
+  return "-";
+}
+
 export function PortsModuleView() {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<PortFilters>(defaultFilters);
@@ -156,7 +204,11 @@ export function PortsModuleView() {
       { key: "imsi", header: "IMSI", render: (row: Record<string, unknown>) => String(row.imsi ?? "-") },
       { key: "iccid", header: "ICCID", render: (row: Record<string, unknown>) => String(row.iccid ?? "-") },
       { key: "status", header: "Port Status", render: (row: Record<string, unknown>) => String(row.status ?? "-") },
-      { key: "company", header: "Company", render: (row: Record<string, unknown>) => String(row.companies ?? "-") },
+      {
+        key: "company",
+        header: "Company",
+        render: (row: Record<string, unknown>) => formatPortCompanyCell(row, companyRows),
+      },
       {
         key: "actions",
         header: "Action",
@@ -177,7 +229,7 @@ export function PortsModuleView() {
         ),
       },
     ],
-    [],
+    [companyRows],
   );
 
   return (

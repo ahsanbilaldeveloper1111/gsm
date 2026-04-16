@@ -1,3 +1,5 @@
+import { normalizeTelecomDataResponse } from "@/lib/api/telecomResponse";
+
 /**
  * Billing analytics endpoints return `ApiSuccessResponse<T>`; unwrap `data` for UI.
  */
@@ -11,6 +13,20 @@ export function unwrapApiSuccessData<T>(payload: unknown): T | null {
     o.success === "1";
   if (ok && o.data != null) return o.data as T;
   return null;
+}
+
+/**
+ * `GET /api/dashboard` may return Laravel `success` + `data`, or telecom `{ code, data }`.
+ */
+export function unwrapDashboardApiPayload(payload: unknown): unknown {
+  if (payload == null) return null;
+  const billing = unwrapApiSuccessData<unknown>(payload);
+  if (billing != null) return billing;
+  try {
+    return normalizeTelecomDataResponse(payload);
+  } catch {
+    return payload;
+  }
 }
 
 export function toFiniteNumber(v: unknown): number {
