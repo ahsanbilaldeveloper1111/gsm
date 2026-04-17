@@ -222,7 +222,7 @@ export function PortsModuleView() {
                 mobile_number: String(row.mobile_number ?? ""),
               })
             }
-            className="rounded-lg bg-zinc-900 px-2 py-1 text-xs font-medium text-white dark:bg-emerald-600"
+            className="min-w-[10.5rem] whitespace-nowrap rounded-lg bg-zinc-900 px-3 py-2 text-xs font-medium text-white dark:bg-emerald-600"
           >
             Update Mobile Number
           </button>

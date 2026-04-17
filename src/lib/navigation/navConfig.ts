@@ -30,7 +30,7 @@ export const navigationGroups: NavGroup[] = [
        { label: "USSD", href: appPaths.ussd },
        { label: "Sync ports", href: appPaths.syncPorts },
        { label: "SIMs", href: appPaths.sims },
-       { label: "Outbox", href: appPaths.outbox },
+      //  { label: "Outbox", href: appPaths.outbox },
        { label: "Inbox", href: appPaths.inbox },
        { label: "CDR", href: appPaths.cdr },
        { label: "Notifications", href: appPaths.notifications }, 
