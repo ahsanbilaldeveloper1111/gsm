@@ -90,6 +90,28 @@ function pickCompanyLabel(obj: Record<string, unknown>): string | null {
   return null;
 }
 
+function formatPortIpCell(
+  row: Record<string, unknown>,
+  gsmRows: Array<Record<string, unknown>>,
+): string {
+  if (typeof row.ip_address === "string" && row.ip_address.trim()) {
+    return row.ip_address.trim();
+  }
+  const gsm = row.gsm;
+  if (gsm && typeof gsm === "object" && !Array.isArray(gsm)) {
+    const ip = (gsm as Record<string, unknown>).ip_address;
+    if (typeof ip === "string" && ip.trim()) return ip.trim();
+  }
+  if (row.gsm_id != null && row.gsm_id !== "") {
+    const id = String(row.gsm_id);
+    const hit = gsmRows.find((g) => String(g.id ?? "") === id);
+    if (hit && typeof hit.ip_address === "string" && hit.ip_address.trim()) {
+      return hit.ip_address.trim();
+    }
+  }
+  return "-";
+}
+
 /** API may return `companies` as a string, `{ name }`, or an array — avoid `String(object)` → `[object Object]`. */
 function formatPortCompanyCell(
   row: Record<string, unknown>,
@@ -194,7 +216,11 @@ export function PortsModuleView() {
 
   const columns = useMemo(
     () => [
-      { key: "ip", header: "IP Address", render: (row: Record<string, unknown>) => String(row.ip_address ?? "-") },
+      {
+        key: "ip",
+        header: "IP Address",
+        render: (row: Record<string, unknown>) => formatPortIpCell(row, gsmRows),
+      },
       { key: "port", header: "Port #", render: (row: Record<string, unknown>) => String(row.port_number ?? row.port ?? "-") },
       { key: "mobile", header: "Mobile Number", render: (row: Record<string, unknown>) => String(row.mobile_number ?? "-") },
       { key: "sim", header: "Sim Status", render: (row: Record<string, unknown>) => String(row.sim_status ?? "-") },
@@ -229,7 +255,7 @@ export function PortsModuleView() {
         ),
       },
     ],
-    [companyRows],
+    [companyRows, gsmRows],
   );
 
   return (
