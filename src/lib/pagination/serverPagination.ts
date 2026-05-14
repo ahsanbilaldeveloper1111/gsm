@@ -42,6 +42,16 @@ export function dataTablesPaging(page: number, perPage: number) {
   };
 }
 
+/**
+ * Laravel `LengthAwarePaginator` query params (`page`, `perPage`), e.g.
+ * `$request->input('page', 1)` and `$request->input('perPage', 15)`.
+ */
+export function laravelPageParams(page: number, perPage: number) {
+  const safePage = Math.max(1, page);
+  const len = Math.max(1, perPage);
+  return { page: safePage, perPage: len };
+}
+
 export function useClampPageToLastPage(
   lastPage: number | undefined,
   page: number,

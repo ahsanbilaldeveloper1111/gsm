@@ -13,9 +13,9 @@ import { useCdr } from "@/hooks/cdr/useCdr";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { usePortsByGsm } from "@/hooks/ports/usePorts";
 import {
-  dataTablesPaging,
   deriveTotalsFromTelecomPagination,
   gsmDropdownListParams,
+  laravelPageParams,
   useClampPageToLastPage,
 } from "@/lib/pagination/serverPagination";
 
@@ -56,7 +56,7 @@ export function CdrModuleView() {
       destination_number: filters.destination_number || undefined,
       start_date: filters.start_date || undefined,
       answer_date: filters.answer_date || undefined,
-      ...dataTablesPaging(page, perPage),
+      ...laravelPageParams(page, perPage),
     }),
     [filters, page, perPage],
   );

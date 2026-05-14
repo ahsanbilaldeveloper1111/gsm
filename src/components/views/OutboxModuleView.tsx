@@ -11,9 +11,9 @@ import { useGsm } from "@/hooks/gsm/useGsm";
 import { useOutbox } from "@/hooks/outbox/useOutbox";
 import { usePortsByGsm } from "@/hooks/ports/usePorts";
 import {
-  dataTablesPaging,
   deriveTotalsFromTelecomPagination,
   gsmDropdownListParams,
+  laravelPageParams,
   useClampPageToLastPage,
 } from "@/lib/pagination/serverPagination";
 
@@ -45,7 +45,7 @@ export function OutboxModuleView() {
     () => ({
       gsm_id: gsmFilter || undefined,
       port_id: portFilter || undefined,
-      ...dataTablesPaging(page, perPage),
+      ...laravelPageParams(page, perPage),
     }),
     [gsmFilter, portFilter, page, perPage],
   );

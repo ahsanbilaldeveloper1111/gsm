@@ -11,9 +11,9 @@ import { useGsm } from "@/hooks/gsm/useGsm";
 import { usePortsByGsm } from "@/hooks/ports/usePorts";
 import { useUssd } from "@/hooks/ussd/useUssd";
 import {
-  dataTablesPaging,
   deriveTotalsFromTelecomPagination,
   gsmDropdownListParams,
+  laravelPageParams,
   useClampPageToLastPage,
 } from "@/lib/pagination/serverPagination";
 
@@ -32,7 +32,7 @@ export function UssdModuleView() {
     () => ({
       gsm_id: gsmFilter || undefined,
       port_id: portFilter || undefined,
-      ...dataTablesPaging(page, perPage),
+      ...laravelPageParams(page, perPage),
     }),
     [gsmFilter, portFilter, page, perPage],
   );

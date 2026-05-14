@@ -5,9 +5,9 @@ import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useGsm, useGsmClientProfile } from "@/hooks/gsm/useGsm";
 import {
-  dataTablesPaging,
   deriveTotalsFromTelecomPagination,
   gsmDropdownListParams,
+  laravelPageParams,
   useClampPageToLastPage,
 } from "@/lib/pagination/serverPagination";
 
@@ -51,7 +51,7 @@ export function ClientGsmProfilingModuleView() {
       () => ({
         company_id: filters.company_id || undefined,
         gsm_id: filters.gsm_id || undefined,
-        ...dataTablesPaging(page, perPage),
+        ...laravelPageParams(page, perPage),
       }),
       [filters, page, perPage],
     ),

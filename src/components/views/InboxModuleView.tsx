@@ -13,9 +13,9 @@ import { useGsm } from "@/hooks/gsm/useGsm";
 import { useInbox } from "@/hooks/inbox/useInbox";
 import { usePortsByGsm } from "@/hooks/ports/usePorts";
 import {
-  dataTablesPaging,
   deriveTotalsFromTelecomPagination,
   gsmDropdownListParams,
+  laravelPageParams,
   useClampPageToLastPage,
 } from "@/lib/pagination/serverPagination";
 
@@ -52,7 +52,7 @@ export function InboxModuleView() {
       port_id: filters.port_id || undefined,
       sender: filters.sender || undefined,
       message: filters.message || undefined,
-      ...dataTablesPaging(page, perPage),
+      ...laravelPageParams(page, perPage),
     }),
     [filters, page, perPage],
   );
