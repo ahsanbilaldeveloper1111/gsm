@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
+import { CompanySearchableDropdown } from "@/components/ui/CompanySearchableDropdown";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useGsm, useGsmClientProfile } from "@/hooks/gsm/useGsm";
 import {
@@ -101,17 +102,18 @@ export function ClientGsmProfilingModuleView() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <SelectField
-          label="Select Company"
-          value={draft.company_id}
-          onChange={(v) => setDraft((s) => ({ ...s, company_id: v }))}
-          options={[{ value: "", label: "All" }].concat(
-            companyRows.map((c, idx) => ({
-              value: String(c.id ?? ""),
-              label: String(c.name ?? `Company ${idx + 1}`),
-            })),
-          )}
-        />
+        <div>
+          <label className="mb-1 block text-sm font-medium">Select Company</label>
+          <CompanySearchableDropdown
+            value={draft.company_id}
+            onChange={(v) => setDraft((s) => ({ ...s, company_id: v }))}
+            rows={companyRows}
+            placeholder="All"
+            listClearLabel="All"
+            selectLike
+            ariaLabel="Select Company"
+          />
+        </div>
         <SelectField
           label="Select GSM"
           value={draft.gsm_id}

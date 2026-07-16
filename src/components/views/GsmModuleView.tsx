@@ -20,6 +20,7 @@ import {
   filterTextControlClassName,
 } from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
+import { CompanySearchableDropdown } from "@/components/ui/CompanySearchableDropdown";
 import {
   deriveTotalsFromTelecomPagination,
   useClampPageToLastPage,
@@ -400,17 +401,21 @@ export function GsmModuleView() {
             className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <h4 className="mb-3 text-lg font-semibold">Assign Company</h4>
-            <SelectField
-              label="Company"
-              value={assignCompanyId}
-              onChange={setAssignCompanyId}
-              options={[{ value: "", label: "Select Company" }].concat(
-                companyRows.map((c, idx) => ({
-                  value: String(c.id ?? ""),
-                  label: String(c.name ?? `Company ${idx + 1}`),
-                })),
-              )}
-            />
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Company
+              </label>
+              <CompanySearchableDropdown
+                value={assignCompanyId}
+                onChange={setAssignCompanyId}
+                rows={companyRows}
+                placeholder="Select Company"
+                listClearLabel="Select Company"
+                selectLike
+                controlClassName={filterSelectControlClassName}
+                ariaLabel="Company"
+              />
+            </div>
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"

@@ -7,10 +7,7 @@ export type SearchableSelectOption = {
   label: string;
 };
 
-export type SearchableSelectProps = {
-  /** Selected option value, or empty / null when cleared. */
-  value: string | null | undefined;
-  onChange: (next: string | null) => void;
+type SearchableSelectBaseProps = {
   options: SearchableSelectOption[];
   placeholder?: string;
   disabled?: boolean;
@@ -36,6 +33,20 @@ export type SearchableSelectProps = {
   listClearLabel?: string;
 };
 
+export type SearchableSelectProps =
+  | (SearchableSelectBaseProps & {
+      multiple?: false;
+      /** Selected option value, or empty / null when cleared. */
+      value: string | null | undefined;
+      onChange: (next: string | null) => void;
+    })
+  | (SearchableSelectBaseProps & {
+      multiple: true;
+      /** Selected option values. Use `[]` to represent “none selected”. */
+      value: string[];
+      onChange: (next: string[]) => void;
+    });
+
 /**
  * Select2-style searchable dropdown: type to filter, click to choose, optional clear.
  * Uses plain React + Tailwind (no jQuery Select2 / react-select).
@@ -56,6 +67,7 @@ export function SearchableSelect({
   selectLike = false,
   controlClassName = "",
   listClearLabel,
+  multiple = false,
 }: SearchableSelectProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,12 +75,20 @@ export function SearchableSelect({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
-  const selectedLabel = useMemo(() => {
-    const v = value == null || value === "" ? null : String(value);
-    if (!v) return "";
-    const o = options.find((x) => x.value === v);
-    return o?.label ?? "";
-  }, [value, options]);
+  const selectedValues: string[] = multiple
+    ? (value as string[])
+    : value == null || value === ""
+      ? []
+      : [String(value)];
+
+  const selectedLabel = (() => {
+    if (selectedValues.length === 0) return "";
+    if (selectedValues.length === 1) {
+      const o = options.find((x) => x.value === selectedValues[0]);
+      return o?.label ?? "";
+    }
+    return `${selectedValues.length} selected`;
+  })();
 
   /** When closing (e.g. click outside), reset the search field to the current label. */
   useEffect(() => {
@@ -111,7 +131,11 @@ export function SearchableSelect({
   };
 
   const handleClear = () => {
-    onChange(null);
+    if (multiple) {
+      (onChange as (next: string[]) => void)([]);
+    } else {
+      (onChange as (next: string | null) => void)(null);
+    }
     setQuery("");
     setOpen(false);
   };
@@ -119,7 +143,15 @@ export function SearchableSelect({
   const clearRowLabel = listClearLabel ?? placeholder;
 
   const selectOption = (opt: SearchableSelectOption) => {
-    onChange(opt.value);
+    if (multiple) {
+      const exists = selectedValues.includes(opt.value);
+      const next = exists
+        ? selectedValues.filter((v) => v !== opt.value)
+        : [...selectedValues, opt.value];
+      (onChange as (next: string[]) => void)(next);
+      return;
+    }
+    (onChange as (next: string | null) => void)(opt.value);
     setQuery(opt.label);
     setOpen(false);
   };
@@ -168,7 +200,7 @@ export function SearchableSelect({
     "w-full min-w-0 rounded-2xl border border-zinc-200/90 bg-white/90 py-2.5 pl-4 text-sm shadow-sm transition placeholder:text-zinc-400 focus:border-emerald-400/90 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-zinc-700/90 dark:bg-zinc-900/80 dark:placeholder:text-zinc-500 dark:focus:border-emerald-500/70 dark:focus:ring-emerald-500/20";
 
   if (selectLike) {
-    const hasValue = value != null && value !== "";
+    const hasValue = selectedValues.length > 0;
     const showClear = isClearable && hasValue;
     const inputPadRight = showClear ? "pr-[4.25rem]" : "pr-11";
 
@@ -254,7 +286,7 @@ export function SearchableSelect({
                   <button
                     type="button"
                     role="option"
-                    aria-selected={String(value) === o.value}
+                    aria-selected={selectedValues.includes(o.value)}
                     className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
                     onMouseDown={(e) => {
                       e.preventDefault();
@@ -299,7 +331,7 @@ export function SearchableSelect({
             }
           }}
         />
-        {isClearable && (value != null && value !== "") ? (
+        {isClearable && selectedValues.length > 0 ? (
           <button
             type="button"
             disabled={disabled}
@@ -340,8 +372,8 @@ export function SearchableSelect({
                 <button
                   type="button"
                   role="option"
-                  aria-selected={String(value) === o.value}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    aria-selected={selectedValues.includes(o.value)}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     selectOption(o);

@@ -8,6 +8,7 @@ import {
   filterTextControlClassName,
 } from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
+import { CompanySearchableDropdown } from "@/components/ui/CompanySearchableDropdown";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import { useGsm } from "@/hooks/gsm/useGsm";
 import { useSimMutations, useSims } from "@/hooks/sims/useSims";
@@ -225,17 +226,19 @@ export function SimManagementView() {
             })),
           )}
         />
-        <FilterSelect
-          label="Select Company"
-          value={filtersDraft.company_id}
-          onChange={(v) => setFiltersDraft((s) => ({ ...s, company_id: v }))}
-          options={[{ value: "", label: "All" }].concat(
-            companyRows.map((c, idx) => ({
-              value: String(c.id ?? ""),
-              label: String(c.name ?? `Company ${idx + 1}`),
-            })),
-          )}
-        />
+        <div>
+          <label className={filterFieldLabelClassName}>Select Company</label>
+          <CompanySearchableDropdown
+            value={filtersDraft.company_id}
+            onChange={(v) => setFiltersDraft((s) => ({ ...s, company_id: v }))}
+            rows={companyRows}
+            placeholder="All"
+            listClearLabel="All"
+            selectLike
+            controlClassName={filterSelectControlClassName}
+            ariaLabel="Select Company"
+          />
+        </div>
         <FilterInput
           label="Sim Number"
           value={filtersDraft.sim_number}
@@ -419,17 +422,19 @@ function SimFormModal({
               })),
             )}
           />
-          <FilterSelect
-            label="Select Company"
-            value={form.company_id}
-            onChange={(value) => onChange({ ...form, company_id: value })}
-            options={[{ value: "", label: "Select Company" }].concat(
-              companyRows.map((c, idx) => ({
-                value: String(c.id ?? ""),
-                label: String(c.name ?? `Company ${idx + 1}`),
-              })),
-            )}
-          />
+          <div>
+            <label className={filterFieldLabelClassName}>Select Company</label>
+            <CompanySearchableDropdown
+              value={form.company_id}
+              onChange={(value) => onChange({ ...form, company_id: value })}
+              rows={companyRows}
+              placeholder="Select Company"
+              listClearLabel="Select Company"
+              selectLike
+              controlClassName={filterSelectControlClassName}
+              ariaLabel="Select Company"
+            />
+          </div>
           <FilterInput
             label="Sim Number"
             value={form.sim_number}

@@ -8,6 +8,7 @@ import {
   filterSelectControlClassName,
 } from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
+import { CompanySearchableDropdown } from "@/components/ui/CompanySearchableDropdown";
 import { useCompanies } from "@/hooks/company/useCompanies";
 import {
   useGsmAssignments,
@@ -363,17 +364,19 @@ export function GsmCompaniesModuleView() {
             })),
           )}
         />
-        <SelectField
-          label="Select Company"
-          value={draft.company_id}
-          onChange={(v) => setDraft((s) => ({ ...s, company_id: v }))}
-          options={[{ value: "", label: "All" }].concat(
-            companyRows.map((c, idx) => ({
-              value: String(c.id ?? ""),
-              label: String(c.name ?? `Company ${idx + 1}`),
-            })),
-          )}
-        />
+        <div>
+          <label className={filterFieldLabelClassName}>Select Company</label>
+          <CompanySearchableDropdown
+            value={draft.company_id}
+            onChange={(v) => setDraft((s) => ({ ...s, company_id: v }))}
+            rows={companyRows}
+            placeholder="All"
+            listClearLabel="All"
+            selectLike
+            controlClassName={filterSelectControlClassName}
+            ariaLabel="Select Company"
+          />
+        </div>
       </FilterPanel>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/50">
@@ -611,17 +614,19 @@ function AssignModal(props: {
             })),
           )}
         />
-        <SelectField
-          label="Company"
-          value={props.companyValue}
-          onChange={props.onCompanyChange}
-          options={[{ value: "", label: "Select Company" }].concat(
-            props.companyRows.map((c, idx) => ({
-              value: String(c.id ?? ""),
-              label: String(c.name ?? `Company ${idx + 1}`),
-            })),
-          )}
-        />
+        <div>
+          <label className={filterFieldLabelClassName}>Company</label>
+          <CompanySearchableDropdown
+            value={props.companyValue}
+            onChange={props.onCompanyChange}
+            rows={props.companyRows}
+            placeholder="Select Company"
+            listClearLabel="Select Company"
+            selectLike
+            controlClassName={filterSelectControlClassName}
+            ariaLabel="Company"
+          />
+        </div>
         {props.showStatus ? (
           <SelectField
             label="Status"

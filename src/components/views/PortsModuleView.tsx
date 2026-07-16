@@ -22,6 +22,7 @@ import {
   filterTextControlClassName,
 } from "@/components/ui/FilterPanel";
 import { PaginatedDataTable } from "@/components/ui/PaginatedDataTable";
+import { CompanySearchableDropdown } from "@/components/ui/CompanySearchableDropdown";
 
 type PortFilters = {
   gsm_id: string;
@@ -316,17 +317,19 @@ export function PortsModuleView() {
             })),
           )}
         />
-        <SelectField
-          label="Company"
-          value={draft.company_id}
-          onChange={(value) => setDraft((s) => ({ ...s, company_id: value }))}
-          options={[{ value: "", label: "All" }].concat(
-            companyRows.map((c, idx) => ({
-              value: String(c.id ?? ""),
-              label: String(c.name ?? `Company ${idx + 1}`),
-            })),
-          )}
-        />
+        <div>
+          <label className={filterFieldLabelClassName}>Company</label>
+          <CompanySearchableDropdown
+            value={draft.company_id}
+            onChange={(value) => setDraft((s) => ({ ...s, company_id: value }))}
+            rows={companyRows}
+            placeholder="All"
+            listClearLabel="All"
+            selectLike
+            controlClassName={filterSelectControlClassName}
+            ariaLabel="Company"
+          />
+        </div>
         <SelectField
           label="SIM Status"
           value={draft.sim_status}

@@ -3,14 +3,12 @@
 import { useMemo, useState } from "react";
 import { JsonPanel } from "@/components/dashboard/JsonPanel";
 import { TelecomDashboardView } from "@/components/dashboard/TelecomDashboardView";
+import { CompanySearchableDropdown } from "@/components/ui/CompanySearchableDropdown";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
-import { useCompanies } from "@/hooks/company/useCompanies";
 import { useDashboardParams } from "@/hooks/dashboard/useDashboardParams";
 import { useGsm } from "@/hooks/gsm/useGsm";
-import { extractListRows } from "@/lib/api/extractApiData";
 import { unwrapDashboardApiPayload } from "@/lib/dashboard/unwrapAnalyticsPayload";
 import type { QueryParams } from "@/lib/api/http";
-import type { Company } from "@/models/Company";
 import { parseTelecomDashboardData } from "@/models/TelecomDashboard";
 
 const EMPTY_DASHBOARD_PARAMS: QueryParams = {};
@@ -36,22 +34,7 @@ export function DashboardOverview() {
   const [companyId, setCompanyId] = useState("");
   const [gsmId, setGsmId] = useState("");
 
-  const companiesQuery = useCompanies({ page: 1, limit: 2000 });
   const gsmQuery = useGsm({ page: 1, perPage: 500 });
-
-  const companyRows = useMemo(() => {
-    const { rows } = extractListRows<Company & Record<string, unknown>>(companiesQuery.data);
-    return rows.filter((r) => r.id != null);
-  }, [companiesQuery.data]);
-
-  const companyOptions = useMemo(() => {
-    return companyRows
-      .map((r) => ({
-        value: String(r.id),
-        label: r.name?.trim() ? String(r.name) : String(r.id),
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [companyRows]);
 
   const gsmOptions = useMemo(() => {
     const rows = gsmQuery.data?.rows ?? [];
@@ -135,30 +118,20 @@ export function DashboardOverview() {
               <span className="h-1 w-1 rounded-full bg-sky-500 shadow-sm shadow-sky-500/50" />
               Company ID
             </label>
-            <SearchableSelect
+            <CompanySearchableDropdown
               value={companyId || null}
-              onChange={(id) => {
-                const next = id ?? "";
-                setCompanyId(next);
-                if (!next) return;
-                const row = companyRows.find((r) => String(r.id) === next) as
-                  | (Company & Record<string, unknown>)
-                  | undefined;
+              onChange={setCompanyId}
+              onCompanyChange={(row) => {
                 const ident = row?.identifier;
                 if (typeof ident === "string" && ident.trim()) {
                   setCompany(ident.trim());
                 }
               }}
-              options={companyOptions}
               placeholder="All companies"
               listClearLabel="Any company — no filter"
-              loading={companiesQuery.isPending}
-              isClearable
               selectLike
               controlClassName={inputClassName}
               ariaLabel="Company ID"
-              loadingText="Loading companies…"
-              emptyText="No companies"
             />
           </div>
           <div className="sm:col-span-2 lg:col-span-1">
